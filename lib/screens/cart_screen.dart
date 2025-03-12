@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:bluetooth_print/bluetooth_print.dart';
 import 'package:flutter/material.dart';
 import 'package:karposku/consts/mki_colors.dart';
+import 'package:karposku/consts/mki_colorsv2.dart';
 import 'package:karposku/consts/mki_methods.dart';
 import 'package:karposku/consts/mki_styles.dart';
 import 'package:karposku/consts/mki_urls.dart';
@@ -15,17 +16,6 @@ import 'package:karposku/screens/navigation_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-TextEditingController _totalController = TextEditingController();
-TextEditingController _paymentController = TextEditingController();
-TextEditingController _changeController = TextEditingController();
-
-late FocusNode _focusNodeTotal;
-late FocusNode _focusNodePayment;
-late FocusNode _focusNodeChange;
-
-TextEditingController _qtyController = TextEditingController();
-late FocusNode _focusNodeQty;
-
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key, required this.title});
 
@@ -37,41 +27,34 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final _formKey = GlobalKey<FormState>();
-  bool isEmpty = false;
-  int paymentStatus = 0;
+  final TextEditingController _totalController = TextEditingController();
+  final TextEditingController _paymentController = TextEditingController();
+  final TextEditingController _changeController = TextEditingController();
+  final TextEditingController _qtyController = TextEditingController();
+  final FocusNode _focusNodeTotal = FocusNode();
+  final FocusNode _focusNodePayment = FocusNode();
+  final FocusNode _focusNodeChange = FocusNode();
+  final FocusNode _focusNodeQty = FocusNode();
 
-  // late Timer _timer;
-  final int _start = 10;
+  bool isEmpty = true;
+  bool isPrinterConnect = false;
+  BluetoothPrint? bluetoothPrint;
+
+  void textValidation(
+      String textMessage, FocusNode focusNode, Color messageColor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: messageColor,
+        content: Text(textMessage),
+      ),
+    );
+    focusNode.requestFocus();
+  }
 
   InvoiceData invoiceData = InvoiceData('', '', '', []);
-  BluetoothPrint bluetoothPrint = BluetoothPrint.instance;
-  bool isPrinterConnect = false;
-
-  // void _startTimer() {
-  //   const oneSec = Duration(seconds: 1);
-  //   _timer = Timer.periodic(
-  //     oneSec,
-  //     (Timer timer) {
-  //       if (_start == 0) {
-  //         setState(() {
-  //           timer.cancel();
-  //           paymentStatus++;
-  //         });
-  //       } else {
-  //         setState(() {
-  //           _start--;
-  //         });
-  //       }
-  //     },
-  //   );
-  // }
 
   @override
   void initState() {
-    _focusNodeQty = FocusNode();
-    _focusNodeTotal = FocusNode();
-    _focusNodePayment = FocusNode();
-    _focusNodeChange = FocusNode();
     super.initState();
   }
 
@@ -88,20 +71,11 @@ class _CartScreenState extends State<CartScreen> {
   Widget build(BuildContext context) {
     var cartListProvider =
         Provider.of<ItemsListCartProvider>(context, listen: true);
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
 
     int intPayValue = 0;
     int intChange = 0;
-
-    void textValidation(
-        String textMessage, FocusNode focusNode, Color messageColor) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: messageColor,
-          content: Text(textMessage),
-        ),
-      );
-      focusNode.requestFocus();
-    }
 
     var printerProvider = Provider.of<PrinterProvider>(context);
     if (printerProvider.bluetoothPrint != null && printerProvider.isConnect) {
@@ -109,1178 +83,867 @@ class _CartScreenState extends State<CartScreen> {
       isPrinterConnect = printerProvider.isConnect;
     }
 
-    // var cartListProvider =
-    //     Provider.of<ItemsListGroupProvider>(context, listen: true);
-    // var itemsList = cartListProvider.itemList;
-    // double screeenWidth = MediaQuery.of(context).size.width;
-    // double screenHeight = MediaQuery.of(context).size.height;
-
-    // void textValidation(
-    //     String textMessage, FocusNode focusNode, Color messageColor) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(
-    //       backgroundColor: messageColor,
-    //       content: Text(textMessage),
-    //     ),
-    //   );
-    //   focusNode.requestFocus();
-    // }
-
-    // startTimer();
-    // print(paymentStatus);
-
     if (cartListProvider.itemList.isNotEmpty) {
       isEmpty = false;
     } else {
       isEmpty = true;
     }
-    // print('Jumlah List ${cartListProvider.itemList.length}');
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () {
-            showDialog(
+      body: Container(
+        width: screenWidth,
+        height: screenHeight,
+        decoration: BoxDecoration(
+          color: MKIColorConstv2.neutral200,
+        ),
+        child: Column(
+          children: [
+            // Header section
+            Container(
+              padding: EdgeInsets.only(top: 50, bottom: 20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    MKIColorConstv2.secondaryDark,
+                    MKIColorConstv2.secondary.withOpacity(0.95),
+                  ],
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Keranjang',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: MKIColorConstv2.neutral100,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        // QR Code Button
+                        IconButton(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return Dialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20.0),
+                                  ),
+                                  elevation: 5.0,
+                                  backgroundColor: Colors.white,
+                                  child: Container(
+                                    height: 320,
+                                    padding: const EdgeInsets.all(20.0),
+                                    child: QrImageView(
+                                      data: 'This is a simple QR code',
+                                      version: QrVersions.auto,
+                                      size: 320,
+                                      gapless: false,
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                          icon: Icon(
+                            Icons.qr_code,
+                            color: MKIColorConstv2.neutral100,
+                            size: 28,
+                          ),
+                        ),
+                        // Payment Button
+                        IconButton(
+                          onPressed: () {
+                            if (cartListProvider.itemList.isNotEmpty) {
+                              _showPaymentDialog(context, cartListProvider,
+                                  intPayValue, intChange);
+                            }
+                          },
+                          icon: Icon(
+                            Icons.payment,
+                            color: MKIColorConstv2.neutral100,
+                            size: 28,
+                          ),
+                        ),
+                        // Clear Cart Button
+                        IconButton(
+                          onPressed: () {
+                            if (!isEmpty) {
+                              _showClearCartDialog(context, cartListProvider);
+                            }
+                          },
+                          icon: Icon(
+                            Icons.delete_outline,
+                            color: MKIColorConstv2.neutral100,
+                            size: 28,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Cart Content
+            Expanded(
+              child: isEmpty
+                  ? _buildEmptyCart()
+                  : _buildCartList(cartListProvider),
+            ),
+
+            // Total Price
+            if (!isEmpty)
+              _buildTotalPrice(cartListProvider, intPayValue, intChange),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyCart() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.shopping_cart_outlined,
+            size: 80,
+            color: MKIColorConstv2.neutral400,
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Keranjang Kosong',
+            style: TextStyle(
+              fontSize: 20,
+              color: MKIColorConstv2.neutral500,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotalPrice(
+      ItemsListCartProvider cartListProvider, int intPayValue, int intChange) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Total Pembayaran',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: MKIColorConstv2.neutral500,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Rp ${MKIVariabels.formatter.format(cartListProvider.total)}',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: MKIColorConstv2.secondary,
+                ),
+              ),
+            ],
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MKIColorConstv2.secondary,
+              padding: EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () {
+              if (cartListProvider.itemList.isNotEmpty) {
+                _showPaymentDialog(
+                    context, cartListProvider, intPayValue, intChange);
+              }
+            },
+            child: Text(
+              'Bayar Sekarang',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCartList(ItemsListCartProvider cartListProvider) {
+    return ListView.builder(
+      padding: EdgeInsets.all(20),
+      itemBuilder: (BuildContext context, index) {
+        String img = cartListProvider.itemList[index].itemsIcon;
+        String strPrice = cartListProvider.itemList[index].itemsPrice;
+        int intPrice = MKIMethods.isNumber(strPrice) ? int.parse(strPrice) : 0;
+        int qty = cartListProvider.itemList[index].qty;
+        int subTotal = intPrice * qty;
+        final String itemsKey = cartListProvider.itemList[index].itemsId;
+
+        return Dismissible(
+          key: Key(itemsKey),
+          background: Container(
+            margin: EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: Colors.red.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.centerRight,
+            padding: EdgeInsets.only(right: 20),
+            child: Icon(
+              Icons.delete,
+              color: Colors.red,
+              size: 26,
+            ),
+          ),
+          direction: DismissDirection.endToStart,
+          confirmDismiss: (DismissDirection direction) async {
+            final confirmed = await showDialog<bool>(
               context: context,
-              builder: (BuildContext context) {
-                return Dialog(
+              builder: (context) {
+                return AlertDialog(
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.0),
+                    borderRadius: BorderRadius.circular(15),
                   ),
-                  elevation: 5.0,
-                  backgroundColor: Colors.white,
-                  child: Container(
-                    // width: 100,
-                    height: 320,
-                    padding: const EdgeInsets.all(20.0),
-                    child: QrImageView(
-                      data: 'This is a simple QR code',
-                      version: QrVersions.auto,
-                      size: 320,
-                      gapless: false,
+                  title: Row(
+                    children: [
+                      Icon(
+                        Icons.delete_outline,
+                        color: MKIColorConstv2.secondary,
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        'Hapus Item',
+                        style: TextStyle(
+                          color: MKIColorConstv2.secondary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: Text(
+                    'Apakah Anda ingin menghapus item ini?',
+                    style: TextStyle(
+                      color: MKIColorConstv2.neutral500,
                     ),
                   ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text(
+                        'Tidak',
+                        style: TextStyle(
+                          color: MKIColorConstv2.neutral500,
+                        ),
+                      ),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: MKIColorConstv2.secondary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () {
+                        cartListProvider.removeItemData(
+                            cartListProvider.itemList[index].itemsId);
+                        Navigator.pop(context, true);
+                      },
+                      child: Text(
+                        'Ya',
+                        style: TextStyle(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             );
-
-            print(_start);
-            if (_start == 0) {
-              Navigator.of(context).pop();
-            }
+            return confirmed;
           },
-          icon: Icon(
-            Icons.qr_code,
-            color: MKIColorConst.mkiWhiteBackground,
-            size: 40,
-          ),
-        ),
-        // InkWell(
-        //   onTap: () {
-        //     NavigationScreen.startIndex = 0;
-        //     Navigator.pushNamedAndRemoveUntil(
-        //       context,
-        //       NavigationScreen.routeName,
-        //       ModalRoute.withName('/'),
-        //     );
-        //   },
-        //   child: Icon(
-        //     Icons.close,
-        //     color: MKIColorConst.mkiSilver,
-        //     size: 45,
-        //   ),
-        // ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              if (cartListProvider.itemList.isNotEmpty) {
-                /* Payment Form */
-                showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      _changeController.text = '0';
-                      _totalController.text =
-                          MKIVariabels.formatter.format(cartListProvider.total);
-                      return AlertDialog(
-                        contentPadding: EdgeInsets.zero,
-                        content: Stack(
-                          // overflow: Overflow.visible,
-                          children: <Widget>[
-                            Form(
-                              key: _formKey,
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    const SizedBox(height: 60),
-                                    getTextPadding(
-                                      "Total",
-                                      Icons.monetization_on,
-                                      Colors.grey.withOpacity(0.4),
-                                      _totalController,
-                                      _focusNodeTotal,
-                                      isEnabled: false,
-                                    ),
-                                    getTextPadding(
-                                      "Payment",
-                                      Icons.money,
-                                      Colors.grey.withOpacity(0.4),
-                                      _paymentController,
-                                      _focusNodePayment,
-                                      isFocus: true,
-                                      onChanged: (val) {
-                                        val = _paymentController.text;
-                                        if (MKIMethods.isNumber(val) == false) {
-                                          _paymentController.text = '0';
-                                          return;
-                                        }
-                                        intPayValue =
-                                            val == '' ? 0 : int.parse(val);
-                                        intChange = 0;
-
-                                        if (intPayValue >
-                                            cartListProvider.total) {
-                                          intChange = intPayValue -
-                                              cartListProvider.total;
-                                        }
-                                        _changeController.text = intChange == 0
-                                            ? '0'
-                                            : MKIVariabels.formatter
-                                                .format(intChange);
-                                      },
-                                    ),
-                                    getTextPadding(
-                                      "Change",
-                                      Icons.monetization_on_sharp,
-                                      Colors.grey.withOpacity(0.4),
-                                      _changeController,
-                                      _focusNodeChange,
-                                      isEnabled: false,
-                                    ),
-                                    Container(
-                                      alignment: Alignment.centerRight,
-                                      // padding: EdgeInsets.all(10),
-                                      margin: const EdgeInsets.only(
-                                          right: 10, bottom: 5),
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          // primary: MKIColorConst
-                                          // .mainLightBlue,
-                                          backgroundColor: MKIColorConst
-                                              .mkiDeepBlue
-                                              .withOpacity(0.7),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(30),
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          "Bayar",
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                        onPressed: () async {
-                                          // String total = _totalController.text;
-                                          String payment =
-                                              _paymentController.text == ''
-                                                  ? '0'
-                                                  : _paymentController.text;
-
-                                          int payValue = int.parse(payment);
-                                          int totalVal = cartListProvider.total;
-
-                                          // print(payValue);
-                                          // print(totalVal);
-                                          // print(confPass);
-                                          // return;
-                                          if (payValue < totalVal) {
-                                            textValidation(
-                                              "Nilai bayar tidak valid",
-                                              _focusNodePayment,
-                                              Colors.redAccent,
-                                            );
-                                            return;
-                                          } else {
-                                            var tmpJson = jsonEncode(
-                                                cartListProvider.itemList);
-                                            var dataPrint = {
-                                              '"total"':
-                                                  '"${cartListProvider.total}"',
-                                              '"list_product"': tmpJson,
-                                            };
-                                            // print(dataPrint);
-                                            print('Check Printer');
-                                            print(
-                                                'Printer Connect Status: $isPrinterConnect');
-                                            // Future<bool?> st =
-                                            //     bluetoothPrint.isConnected;
-                                            // print(st);
-
-                                            String createResult =
-                                                await MKIUrls.createNewInvoice(
-                                              dataPrint.toString(),
-                                            );
-
-                                            var rs = jsonDecode(createResult);
-
-                                            if (rs['status'].toLowerCase() ==
-                                                'success') {
-                                              print(createResult);
-                                              print(rs['data']['invoice_no']);
-
-                                              String invoiceNo =
-                                                  rs['data']['invoice_no'];
-                                              List<ItemsCartData> itemsList =
-                                                  cartListProvider.itemList;
-                                              /* PRINT IS HERE */
-                                              // MKIMethods.invoicePrint(
-                                              //   isPrinterConnect,
-                                              //   invoiceNo,
-                                              //   itemsList,
-                                              //   bluetoothPrint,
-                                              // );
-
-                                              MKIMethods.invoicePrintNew(
-                                                isPrinterConnect,
-                                                bluetoothPrint,
-                                                invoiceNo,
-                                                itemsList,
-                                                intPayValue == 0
-                                                    ? '0'
-                                                    : MKIVariabels.formatter
-                                                        .format(intPayValue),
-                                                intChange == 0
-                                                    ? '0'
-                                                    : MKIVariabels.formatter
-                                                        .format(intChange),
-                                              );
-
-                                              // ignore: use_build_context_synchronously
-                                              MKIMethods.showMessage(
-                                                  // ignore: use_build_context_synchronously
-                                                  context,
-                                                  Colors.green,
-                                                  'Invoice berhasil ditambahkan');
-                                              cartListProvider.clearItemsData();
-
-                                              NavigationScreen.startIndex = 1;
-                                              Navigator.pushReplacement(
-                                                // ignore: use_build_context_synchronously
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      const NavigationScreen(),
-                                                ),
-                                              );
-                                            } else {
-                                              // ignore: use_build_context_synchronously
-                                              MKIMethods.showMessage(
-                                                  // ignore: use_build_context_synchronously
-                                                  context,
-                                                  Colors.redAccent,
-                                                  'Ada kesalahan data');
-                                            }
-                                          }
-                                          // if (_formKey.currentState
-                                          //     .validate()) {
-                                          //   _formKey.currentState.save();
-                                          // }
-                                        },
-                                      ),
-                                    )
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 0,
-                              left: 0,
-                              child: Container(
-                                height: 60,
-                                width: MediaQuery.of(context).size.width,
-                                decoration: BoxDecoration(
-                                    gradient: MKIColorConst.mainGoldBlueAppBar,
-                                    // color:
-                                    // MKIColorConst.mainToscaBlue,
-                                    // color: Colors.yellow
-                                    //     .withOpacity(0.2),
-                                    border: Border(
-                                        bottom: BorderSide(
-                                            color:
-                                                Colors.grey.withOpacity(0.3)))),
-                                child: Container(
-                                  padding: const EdgeInsets.only(left: 30),
-                                  alignment: Alignment.centerLeft,
-                                  child: const Text(
-                                    "Pembayaran",
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 20,
-                                        fontStyle: FontStyle.italic,
-                                        fontFamily: "Helvetica"),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              right: 12,
-                              top: 15.0,
-                              child: InkResponse(
-                                onTap: () {
-                                  Navigator.pop(context);
-                                },
-                                child: CircleAvatar(
-                                  radius: 12,
-                                  backgroundColor: MKIColorConst.mkiDeepBlue
-                                      .withOpacity(0.7),
-                                  child: const Icon(
-                                    Icons.close,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).then((value) {
-                  _totalController.clear();
-                  _paymentController.clear();
-                  _changeController.clear();
-                });
-              }
-            },
-            /* Payment */
-            icon: Icon(
-              Icons.attach_money_outlined,
-              color: MKIColorConst.mkiWhiteBackground,
-              size: 40,
+          child: Container(
+            margin: EdgeInsets.only(bottom: 16),
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: MKIColorConstv2.neutral300,
+                width: 1,
+              ),
             ),
-          ),
-          IconButton(
-            onPressed: () {
-              if (!isEmpty) {
-                showDialog<void>(
-                  context: context,
-                  barrierDismissible: false, // user must tap button!
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      // surfaceTintColor: Colors.amber,
-                      // backgroundColor: Colors.yellow,
-                      title: const Center(child: Text('Konfirmasi')),
-                      content: const SingleChildScrollView(
-                        child: ListBody(
-                          children: <Widget>[
-                            // Text('This is a demo alert dialog.'),
-                            Text('Apakah Anda ingin menghapus keranjang?'),
-                          ],
+            child: Row(
+              children: [
+                // Product Image
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    image: DecorationImage(
+                      image: img != ''
+                          ? NetworkImage(img)
+                          : AssetImage('assets/images/karbotech.png')
+                              as ImageProvider,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12),
+                // Product Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        cartListProvider.itemList[index].itemsName,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: MKIColorConstv2.secondaryDark,
                         ),
                       ),
-                      actions: <Widget>[
-                        TextButton(
-                          child: Container(
-                            width: 65,
-                            height: 35,
-                            decoration: BoxDecoration(
-                                color: MKIColorConst.mkiDeepBlue,
-                                borderRadius: BorderRadius.circular(30)),
-                            child: const Center(
-                              child: Text(
-                                'YA',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                          onPressed: () {
-                            cartListProvider.clearItemsData();
-                            Navigator.of(context).pop();
-                          },
+                      SizedBox(height: 4),
+                      Text(
+                        'Rp ${MKIVariabels.formatter.format(intPrice)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: MKIColorConstv2.neutral500,
                         ),
-                        TextButton(
-                          child: Container(
-                            width: 65,
-                            height: 35,
+                      ),
+                      SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Container(
                             decoration: BoxDecoration(
-                                color: MKIColorConst.mkiDeepBlue,
-                                borderRadius: BorderRadius.circular(30)),
-                            child: const Center(
-                              child: Text(
-                                'TIDAK',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                ),
-                              ),
+                              color: MKIColorConstv2.secondary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                          ),
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                        ),
-                      ],
-                    );
-                  },
-                );
-              }
-            },
-            icon: Icon(
-              Icons.delete_forever,
-              color: MKIColorConst.mkiWhiteBackground,
-              size: 40,
-            ),
-          ),
-        ],
-        centerTitle: true,
-        title: Text(
-          'CART',
-          style: TextStyle(color: MKIColorConst.mainBlue),
-        ),
-        backgroundColor: MKIColorConst.mainToscaBlue,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: MKIColorConst.mainGoldBlueAppBar,
-          ),
-        ),
-      ),
-      body: isEmpty
-          ? Center(
-              child: Text(
-                'Cart Is Empty !',
-                style: TextStyle(
-                  color: MKIColorConst.mkiDeepBlue,
-                  fontSize: 30,
-                ),
-              ),
-            )
-          : ListView.builder(
-              itemBuilder: (BuildContext context, index) {
-                String img = cartListProvider.itemList[index].itemsIcon;
-                String strPrice = cartListProvider.itemList[index].itemsPrice;
-                int intPrice =
-                    MKIMethods.isNumber(strPrice) ? int.parse(strPrice) : 0;
-                int qty = cartListProvider.itemList[index].qty;
-                int subTotal = intPrice * qty;
-                // String strSubTotal = subTotal.toString();
-                final String itemsKey =
-                    cartListProvider.itemList[index].itemsId;
-                return Dismissible(
-                  key: Key(itemsKey),
-                  confirmDismiss: (DismissDirection direction) async {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: const Text('Hapus dari list?'),
-                          actions: [
-                            Container(
-                              width: 65,
-                              height: 35,
-                              decoration: BoxDecoration(
-                                  color: MKIColorConst.mkiDeepBlue,
-                                  borderRadius: BorderRadius.circular(30)),
-                              child: TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text(
-                                  'No',
-                                  style: TextStyle(
-                                    color: Colors.white,
+                            child: Row(
+                              children: [
+                                // Decrease Button
+                                IconButton(
+                                  onPressed: () {
+                                    if (qty > 1) {
+                                      cartListProvider.decItemsQty(
+                                          cartListProvider.itemList[index]);
+                                    } else {
+                                      cartListProvider.removeItemData(
+                                          cartListProvider
+                                              .itemList[index].itemsId);
+                                    }
+                                  },
+                                  icon: Icon(
+                                    Icons.remove,
+                                    size: 20,
+                                    color: MKIColorConstv2.secondary,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: BoxConstraints(
+                                    minWidth: 32,
+                                    minHeight: 32,
                                   ),
                                 ),
-                              ),
-                            ),
-                            Container(
-                              width: 65,
-                              height: 35,
-                              decoration: BoxDecoration(
-                                  color: MKIColorConst.mkiDeepBlue,
-                                  borderRadius: BorderRadius.circular(30)),
-                              child: TextButton(
-                                onPressed: () {
-                                  cartListProvider.removeItemData(
-                                      cartListProvider.itemList[index].itemsId);
-                                  Navigator.pop(context, true);
-                                },
-                                child: const Text(
-                                  'Yes',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            )
-                          ],
-                        );
-                      },
-                    );
-                    // log('Deletion confirmed: $confirmed');
-                    return confirmed;
-                  },
-                  child: MKIStyles.mkiCartTileNew(
-                    context,
-                    /* Left Image */
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
-                      child: img != ''
-                          ? Image.network(
-                              img,
-                            )
-                          : Image.asset('assets/images/karbotech.png'),
-                    ),
-                    cartListProvider.itemList[index].itemsName,
-                    MKIVariabels.formatter.format(intPrice),
-                    cartListProvider.itemList[index].qty.toString(),
-                    MKIVariabels.formatter.format(subTotal),
+                                // Quantity
+                                GestureDetector(
+                                  onDoubleTap: () {
+                                    String txtQty = cartListProvider
+                                        .itemList[index].qty
+                                        .toString();
+                                    _qtyController.text = txtQty;
+                                    _focusNodeQty.requestFocus();
 
-                    /* Increase & Decrease Button */
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        /* Decrease Button */
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            // borderRadius: BorderRadius.circular(17),
-                          ),
-                          height: 55,
-                          child: InkWell(
-                            child: Icon(
-                              Icons.remove_circle,
-                              color: MKIColorConst.mkiDeepBlue,
-                              size: 31,
-                            ),
-                            onTap: () {
-                              if (qty > 1) {
-                                cartListProvider.decItemsQty(
-                                    cartListProvider.itemList[index]);
-                              } else {
-                                cartListProvider.removeItemData(
-                                    cartListProvider.itemList[index].itemsId);
-                              }
-                            },
-                          ),
-                        ),
-                        /* QTY */
-                        GestureDetector(
-                          onDoubleTap: () {
-                            // print('Doble Tap');
-                            String txtQty =
-                                cartListProvider.itemList[index].qty.toString();
-                            _qtyController.text = txtQty;
-                            // _qtyController.selection;
-                            _focusNodeQty.requestFocus();
-                            // _qtyController.selection;
-                            showDialog(
-                                context: context,
-                                builder: (BuildContext ctx) {
-                                  return AlertDialog(
-                                    content: Stack(
-                                      children: [
-                                        // Positioned(
-                                        //   top: 0,
-                                        //   left: 0,
-                                        //   child: Container(
-                                        //     height: 60,
-                                        //     width: MediaQuery.of(context)
-                                        //         .size
-                                        //         .width,
-                                        //     decoration: BoxDecoration(
-                                        //       gradient: MKIColorConst
-                                        //           .mainGoldBlueAppBar,
-                                        //       border: Border(
-                                        //         bottom: BorderSide(
-                                        //           color: Colors.grey
-                                        //               .withOpacity(0.3),
-                                        //         ),
-                                        //       ),
-                                        //     ),
-                                        //     child: Container(
-                                        //       padding: const EdgeInsets.only(
-                                        //           left: 30),
-                                        //       alignment: Alignment.centerLeft,
-                                        //       child: const Text(
-                                        //         "Quantity",
-                                        //         style: TextStyle(
-                                        //             color: Colors.white,
-                                        //             fontWeight: FontWeight.w700,
-                                        //             fontSize: 20,
-                                        //             fontStyle: FontStyle.italic,
-                                        //             fontFamily: "Helvetica"),
-                                        //       ),
-                                        //     ),
-                                        //   ),
-                                        // ),
-                                        // Positioned(
-                                        //   right: 12,
-                                        //   top: 15,
-                                        //   child: IconButton(
-                                        //     onPressed: () {
-                                        //       print('Close');
-                                        //     },
-                                        //     icon: Icon(Icons.close),
-                                        //   ),
-                                        // ),
-                                        // Positioned(
-                                        //   right: 12,
-                                        //   top: 15.0,
-                                        //   child: InkResponse(
-                                        //     onTap: () {
-                                        //       Navigator.pop(context);
-                                        //     },
-                                        //     child: CircleAvatar(
-                                        //       radius: 12,
-                                        //       backgroundColor: MKIColorConst
-                                        //           .mkiDeepBlue
-                                        //           .withOpacity(0.7),
-                                        //       child: const Icon(
-                                        //         Icons.close,
-                                        //         color: Colors.white,
-                                        //         size: 18,
-                                        //       ),
-                                        //     ),
-                                        //   ),
-                                        // ),
-                                        Form(
-                                          key: _formKey,
-                                          child: SingleChildScrollView(
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: <Widget>[
-                                                // const SizedBox(height: 30),
-                                                getTextPaddingQty(
-                                                  "Qty",
-                                                  // Icons.key,
-                                                  Colors.grey.withOpacity(0.4),
-                                                  _qtyController,
-                                                  _focusNodeQty,
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(15),
+                                          ),
+                                          title: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.edit_outlined,
+                                                color:
+                                                    MKIColorConstv2.secondary,
+                                              ),
+                                              SizedBox(width: 10),
+                                              Text(
+                                                'Ubah Jumlah',
+                                                style: TextStyle(
+                                                  color:
+                                                      MKIColorConstv2.secondary,
+                                                  fontWeight: FontWeight.bold,
                                                 ),
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                  children: [
-                                                    /* Cancel Button */
-                                                    Container(
-                                                      alignment:
-                                                          Alignment.centerLeft,
-                                                      margin:
-                                                          const EdgeInsets.only(
-                                                              right: 10,
-                                                              bottom: 5),
-                                                      child: ElevatedButton(
-                                                        style: ElevatedButton
-                                                            .styleFrom(
-                                                          backgroundColor:
-                                                              MKIColorConst
-                                                                  .mkiDeepBlue
-                                                                  .withOpacity(
-                                                                      0.7),
-                                                          shape:
-                                                              RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        30),
-                                                          ),
-                                                        ),
-                                                        child: const Text(
-                                                          " Batal ",
-                                                          style: TextStyle(
-                                                              color:
-                                                                  Colors.white),
-                                                        ),
-                                                        onPressed: () async {
-                                                          Navigator.pop(
-                                                              context);
-                                                        },
-                                                      ),
-                                                    ),
-                                                    /* Save Button */
-                                                    Container(
-                                                      alignment:
-                                                          Alignment.centerRight,
-                                                      margin:
-                                                          const EdgeInsets.only(
-                                                              right: 10,
-                                                              bottom: 5),
-                                                      child: ElevatedButton(
-                                                        style: ElevatedButton
-                                                            .styleFrom(
-                                                          backgroundColor:
-                                                              MKIColorConst
-                                                                  .mkiDeepBlue
-                                                                  .withOpacity(
-                                                                      0.7),
-                                                          shape:
-                                                              RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        30),
-                                                          ),
-                                                        ),
-                                                        child: const Text(
-                                                          "Ubah",
-                                                          style: TextStyle(
-                                                              color:
-                                                                  Colors.white),
-                                                        ),
-                                                        onPressed: () async {
-                                                          if (MKIMethods
-                                                              .isNumber(
-                                                                  _qtyController
-                                                                      .text)) {
-                                                            int tmpQty =
-                                                                int.parse(
-                                                                    _qtyController
-                                                                        .text);
-                                                            if (tmpQty <= 0) {
-                                                              MKIMethods.showMessage(
-                                                                  context,
-                                                                  Colors
-                                                                      .redAccent,
-                                                                  'Quantity minimal 1');
-                                                            } else {
-                                                              cartListProvider
-                                                                  .setItemsQty(
-                                                                cartListProvider
-                                                                        .itemList[
-                                                                    index],
-                                                                tmpQty,
-                                                              );
-                                                              _qtyController
-                                                                  .clear();
-                                                              Navigator.pop(
-                                                                  context);
-                                                            }
-                                                          } else if (_qtyController
-                                                                  .text
-                                                                  .trim() ==
-                                                              '') {
-                                                            MKIMethods.showMessage(
-                                                                context,
-                                                                Colors
-                                                                    .redAccent,
-                                                                'Quantity harus diisi');
-                                                          } else {
-                                                            MKIMethods.showMessage(
-                                                                context,
-                                                                Colors
-                                                                    .redAccent,
-                                                                'Quantity tidak valid');
-                                                          }
-                                                          // int tmpQty = MKIMethods
-                                                          //         .isNumber(
-                                                          //             _qtyController
-                                                          //                 .text)
-                                                          //     ? int.parse(
-                                                          //         _qtyController
-                                                          //             .text)
-                                                          //     : 0;
-                                                          // cartListProvider
-                                                          //     .itemList[index]
-                                                          //     .qty = tmpQty;
-
-                                                          // String strQty =
-                                                          //     _qtyController
-                                                          //         .text;
-                                                          // if (strQty.trim() ==
-                                                          //         '' ||
-                                                          //     _qtyController
-                                                          //         .text
-                                                          //         .isEmpty) {
-                                                          //   MKIMethods.showMessage(
-                                                          //       context,
-                                                          //       Colors
-                                                          //           .redAccent,
-                                                          //       'Quantity tidak boleh kosong');
-                                                          // } else if (strQty
-                                                          //         .trim() ==
-                                                          //     '0') {
-                                                          //   MKIMethods.showMessage(
-                                                          //       context,
-                                                          //       Colors
-                                                          //           .redAccent,
-                                                          //       'Quantity minimal 1');
-                                                          // } else if (!MKIMethods
-                                                          //     .isNumber(
-                                                          //         strQty)) {
-                                                          //   MKIMethods.showMessage(
-                                                          //       context,
-                                                          //       Colors
-                                                          //           .redAccent,
-                                                          //       'Angka tidak valid');
-
-                                                          // Navigator.pop(context);
-                                                        },
-                                                      ),
-                                                    )
-                                                  ],
+                                              ),
+                                            ],
+                                          ),
+                                          content: Container(
+                                            decoration: BoxDecoration(
+                                              color: MKIColorConstv2.neutral200,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: TextFormField(
+                                              controller: _qtyController,
+                                              focusNode: _focusNodeQty,
+                                              keyboardType:
+                                                  TextInputType.number,
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: MKIColorConstv2
+                                                    .secondaryDark,
+                                              ),
+                                              decoration: InputDecoration(
+                                                hintText: 'Masukkan jumlah',
+                                                hintStyle: TextStyle(
+                                                  color: MKIColorConstv2
+                                                      .neutral400,
                                                 ),
-                                              ],
+                                                border: InputBorder.none,
+                                                contentPadding:
+                                                    EdgeInsets.symmetric(
+                                                  horizontal: 15,
+                                                  vertical: 12,
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
+                                              child: Text(
+                                                'Batal',
+                                                style: TextStyle(
+                                                  color: MKIColorConstv2
+                                                      .neutral500,
+                                                ),
+                                              ),
+                                            ),
+                                            ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    MKIColorConstv2.secondary,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                              onPressed: () {
+                                                if (MKIMethods.isNumber(
+                                                    _qtyController.text)) {
+                                                  int tmpQty = int.parse(
+                                                      _qtyController.text);
+                                                  if (tmpQty <= 0) {
+                                                    MKIMethods.showMessage(
+                                                        context,
+                                                        Colors.redAccent,
+                                                        'Quantity minimal 1');
+                                                  } else {
+                                                    cartListProvider
+                                                        .setItemsQty(
+                                                            cartListProvider
+                                                                    .itemList[
+                                                                index],
+                                                            tmpQty);
+                                                    _qtyController.clear();
+                                                    Navigator.pop(context);
+                                                  }
+                                                } else if (_qtyController.text
+                                                        .trim() ==
+                                                    '') {
+                                                  MKIMethods.showMessage(
+                                                      context,
+                                                      Colors.redAccent,
+                                                      'Quantity harus diisi');
+                                                } else {
+                                                  MKIMethods.showMessage(
+                                                      context,
+                                                      Colors.redAccent,
+                                                      'Quantity tidak valid');
+                                                }
+                                              },
+                                              child: Text(
+                                                'Simpan',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                  child: Container(
+                                    width: 32,
+                                    height: 32,
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      qty.toString(),
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: MKIColorConstv2.secondary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
-                                  );
-                                });
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.amber,
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                            width: 35,
-                            child: Center(
-                              child: Text(
-                                cartListProvider.itemList[index].qty.toString(),
-                                style: TextStyle(fontSize: 17),
-                              ),
+                                  ),
+                                ),
+                                // Increase Button
+                                IconButton(
+                                  onPressed: () {
+                                    cartListProvider.incItemsQty(
+                                        cartListProvider.itemList[index]);
+                                  },
+                                  icon: Icon(
+                                    Icons.add,
+                                    size: 20,
+                                    color: MKIColorConstv2.secondary,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: BoxConstraints(
+                                    minWidth: 32,
+                                    minHeight: 32,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        /* Increase Button */
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            // borderRadius: BorderRadius.circular(17),
-                          ),
-                          height: 55,
-                          child: InkWell(
-                            child: Icon(
-                              Icons.add_circle,
-                              color: MKIColorConst.mkiDeepBlue,
-                              size: 31,
+                          Spacer(),
+                          Text(
+                            'Rp ${MKIVariabels.formatter.format(subTotal)}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: MKIColorConstv2.secondary,
                             ),
-                            onTap: () {
-                              cartListProvider.incItemsQty(
-                                  cartListProvider.itemList[index]);
-                            },
                           ),
-                        ),
-                      ],
-                    ),
-                    index,
-                  ),
-                );
-              },
-              itemCount: cartListProvider.itemList.length,
-            ),
-      bottomSheet: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey.withOpacity(0.5),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        height: 32,
-        width: MediaQuery.of(context).size.width * 0.5,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                const Text(
-                  '  Rp.',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  cartListProvider.total > 0
-                      ? MKIVariabels.formatter.format(cartListProvider.total)
-                      : '0',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.redAccent,
-                  ),
-                )
               ],
             ),
-            // Container(
-            //   // color: Colors.yellowAccent,
-            //   margin: EdgeInsets.only(right: 15),
-            //   height: 32,
-            //   width: 80,
-            //   decoration: BoxDecoration(
-            //     borderRadius: BorderRadius.circular(30),
-            //     color: MKIColorConst.mkiDeepBlue.withOpacity(0.7),
-            //   ),
-            //   child: MaterialButton(
-            //     onPressed: () {
-            //       // var tmpJson = jsonEncode(cartListProvider.itemList);
-            //       // print(tmpJson);
-            //       if (cartListProvider.itemList.isNotEmpty) {
-            //         Timer(const Duration(seconds: 1), () async {
-            //           var tmpJson = jsonEncode(cartListProvider.itemList);
-            //           var dataPrint = {
-            //             '"total"': '"${cartListProvider.total}"',
-            //             '"list_product"': tmpJson,
-            //           };
-            //           // print(dataPrint);
-            //           String status = await MKIUrls.createNewInvoice(
-            //             dataPrint.toString(),
-            //           );
-
-            //           if (status.toLowerCase() == 'success') {
-            //             // ignore: use_build_context_synchronously
-            //             MKIMethods.showMessage(
-            //                 // ignore: use_build_context_synchronously
-            //                 context,
-            //                 Colors.green,
-            //                 'Invoice berhasil ditambahkan');
-            //             cartListProvider.clearItemsData();
-
-            //             NavigationScreen.startIndex = 1;
-            //             Navigator.pushReplacement(
-            //               // ignore: use_build_context_synchronously
-            //               context,
-            //               MaterialPageRoute(
-            //                 builder: (context) => const NavigationScreen(),
-            //               ),
-            //             );
-            //           } else {
-            //             // ignore: use_build_context_synchronously
-            //             MKIMethods.showMessage(
-            //                 // ignore: use_build_context_synchronously
-            //                 context,
-            //                 Colors.redAccent,
-            //                 'Ada kesalahan data');
-            //           }
-            //         });
-            //       }
-            //     },
-            //     child: const Text(
-            //       'Bayar',
-            //       style: TextStyle(
-            //         fontSize: 17,
-            //         color: Colors.white,
-            //       ),
-            //     ),
-            //   ),
-            // ),
-
-            // Container(
-            //   height: 35,
-            //   width: screeenWidth * 0.45,
-            //   decoration:
-            //       BoxDecoration(borderRadius: BorderRadius.circular(25)),
-            //   color: MKIColorConst.mkiYellow,
-            // )
-          ],
-        ),
-      ),
+          ),
+        );
+      },
+      itemCount: cartListProvider.itemList.length,
     );
-
-    // return OrientationBuilder(
-    //   builder: (context, orientation) {
-    //     return screeenOrientation(context, orientation, [
-    //       Container(
-    //         color: MKIColorConst.mkiGoldLight,
-    //         width: orientation == Orientation.portrait
-    //             ? screeenWidth
-    //             : screeenWidth * 0.65,
-    //         height: orientation == Orientation.portrait
-    //             ? screenHeight * 0.6
-    //             : screenHeight,
-    //         child: isEmpty
-    //             ? Center(
-    //                 child: Text(
-    //                   'Cart Is Empty !',
-    //                   style: TextStyle(
-    //                     color: MKIColorConst.mkiDeepBlue,
-    //                     fontSize: 30,
-    //                   ),
-    //                 ),
-    //               )
-    //             : ListView.builder(
-    //                 itemBuilder: (BuildContext context, index) {
-    //                   String img = cartListProvider.itemList[index].itemsIcon;
-    //                   return Container(
-    //                       margin: const EdgeInsets.only(top: 4, bottom: 5),
-    //                       padding: const EdgeInsets.only(left: 5, right: 5),
-    //                       color: index.isOdd
-    //                           ? MKIColorConst.mkiWhiteBackground
-    //                               .withOpacity(0.1)
-    //                           : MKIColorConst.mkiSeaBlue.withOpacity(0.1),
-    //                       width: screeenWidth,
-    //                       height: 50,
-    //                       child: Row(
-    //                         mainAxisAlignment: MainAxisAlignment.start,
-    //                         children: [
-    //                           Container(
-    //                             child: img != ''
-    //                                 ? Image.network(
-    //                                     img,
-    //                                     height: 60,
-    //                                     fit: BoxFit.cover,
-    //                                   )
-    //                                 : Image.asset(
-    //                                     'assets/images/karbotech.png'),
-    //                           ),
-    //                           Container(),
-    //                           Container(),
-    //                         ],
-    //                       ));
-    //                 },
-    //                 itemCount: cartListProvider.itemList.length,
-    //               ),
-    //       ),
-    //       Container(
-    //         color: Colors.amber,
-    //         width: orientation == Orientation.portrait
-    //             ? screeenWidth
-    //             : screeenWidth * 0.35,
-    //         height: orientation == Orientation.portrait
-    //             ? screenHeight * 0.3
-    //             : screenHeight,
-    //       ),
-    //     ]);
-    //   },
-    // );
   }
 
-  Widget screeenOrientation(
-      BuildContext context, Orientation orientation, List<Widget> items) {
-    return orientation == Orientation.portrait
-        ? SingleChildScrollView(
-            child: Column(
-              children: items,
-            ),
-          )
-        : Row(
-            children: items,
-          );
-  }
-
-  Padding getTextPaddingQty(
-    String hintText,
-    // IconData icon,
-    Color iconColor,
-    TextEditingController textController,
+  Widget _buildPaymentField(
+    String hint,
+    TextEditingController controller,
     FocusNode focusNode,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.all(5.0),
-      child: Container(
-        height: 40,
-        decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.withOpacity(0.2))),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Expanded(
-            //   flex: 1,
-            //   child: Container(
-            //     width: 30,
-            //     decoration: BoxDecoration(
-            //         border: Border(
-            //             right:
-            //                 BorderSide(color: Colors.grey.withOpacity(0.2)))),
-            //     child: Center(
-            //       child: Icon(
-            //         icon,
-            //         size: 25,
-            //         // color: Colors.grey.withOpacity(0.4),
-            //         color: iconColor,
-            //       ),
-            //     ),
-            //   ),
-            // ),
-            Expanded(
-              flex: 2,
-              child: TextFormField(
-                controller: textController,
-                focusNode: focusNode,
-                obscureText: false,
-                keyboardType: TextInputType.numberWithOptions(signed: true),
-                decoration: InputDecoration(
-                  hintText: hintText,
-                  contentPadding: const EdgeInsets.only(left: 10),
-                  border: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  errorBorder: InputBorder.none,
-                  hintStyle: const TextStyle(
-                      color: Colors.black26,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500),
-                ),
-              ),
-            ),
-          ],
+    IconData icon, {
+    bool isEnabled = true,
+    Function(String)? onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: MKIColorConstv2.neutral200,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: TextFormField(
+        controller: controller,
+        focusNode: focusNode,
+        enabled: isEnabled,
+        onChanged: onChanged,
+        keyboardType: TextInputType.number,
+        style: TextStyle(
+          fontSize: 16,
+          color: MKIColorConstv2.secondaryDark,
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(
+            color: MKIColorConstv2.neutral400,
+          ),
+          prefixIcon: Icon(
+            icon,
+            color: MKIColorConstv2.secondary,
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 15,
+            vertical: 12,
+          ),
         ),
       ),
     );
   }
-}
 
-Padding getTextPadding(
-  String hintText,
-  IconData icon,
-  Color iconColor,
-  TextEditingController textController,
-  FocusNode focusNode, {
-  bool isEnabled = true,
-  bool isFocus = false,
-  final Function(String)? onChanged,
-}) {
-  return Padding(
-    padding: const EdgeInsets.all(5.0),
-    child: Container(
-      height: 40,
-      decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.withOpacity(0.2))),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 1,
-            child: Container(
-              width: 30,
-              decoration: BoxDecoration(
-                  border: Border(
-                      right: BorderSide(color: Colors.grey.withOpacity(0.2)))),
-              child: Center(
-                child: Icon(
-                  icon,
-                  size: 25,
-                  // color: Colors.grey.withOpacity(0.4),
-                  color: iconColor,
+  void _showPaymentDialog(BuildContext context,
+      ItemsListCartProvider cartListProvider, int intPayValue, int intChange) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        _changeController.text = '0';
+        _totalController.text =
+            MKIVariabels.formatter.format(cartListProvider.total);
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.payment,
+                color: MKIColorConstv2.secondary,
+              ),
+              SizedBox(width: 10),
+              Text(
+                'Pembayaran',
+                style: TextStyle(
+                  color: MKIColorConstv2.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildPaymentField(
+                  "Total",
+                  _totalController,
+                  _focusNodeTotal,
+                  Icons.monetization_on,
+                  isEnabled: false,
+                ),
+                SizedBox(height: 15),
+                _buildPaymentField(
+                  "Pembayaran",
+                  _paymentController,
+                  _focusNodePayment,
+                  Icons.payments_outlined,
+                  onChanged: (val) {
+                    val = _paymentController.text;
+                    if (MKIMethods.isNumber(val) == false) {
+                      _paymentController.text = '0';
+                      return;
+                    }
+                    intPayValue = val == '' ? 0 : int.parse(val);
+                    intChange = 0;
+
+                    if (intPayValue > cartListProvider.total) {
+                      intChange = intPayValue - cartListProvider.total;
+                    }
+                    _changeController.text = intChange == 0
+                        ? '0'
+                        : MKIVariabels.formatter.format(intChange);
+                  },
+                ),
+                SizedBox(height: 15),
+                _buildPaymentField(
+                  "Kembalian",
+                  _changeController,
+                  _focusNodeChange,
+                  Icons.monetization_on_sharp,
+                  isEnabled: false,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Batal',
+                style: TextStyle(
+                  color: MKIColorConstv2.neutral500,
                 ),
               ),
             ),
-          ),
-          Expanded(
-            flex: 4,
-            child: TextFormField(
-              controller: textController,
-              focusNode: focusNode,
-              obscureText: false,
-              keyboardType: TextInputType.number,
-              enabled: isEnabled,
-              autofocus: isFocus,
-              onChanged: onChanged,
-              decoration: InputDecoration(
-                hintText: hintText,
-                contentPadding: const EdgeInsets.only(left: 20),
-                border: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                hintStyle: const TextStyle(
-                    color: Colors.black26,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w500),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MKIColorConstv2.secondary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () async {
+                String payment = _paymentController.text == ''
+                    ? '0'
+                    : _paymentController.text;
+
+                int payValue = int.parse(payment);
+                int totalVal = cartListProvider.total;
+
+                if (payValue < totalVal) {
+                  textValidation("Nilai bayar tidak valid", _focusNodePayment,
+                      Colors.redAccent);
+                  return;
+                } else {
+                  var tmpJson = jsonEncode(cartListProvider.itemList);
+                  var dataPrint = {
+                    '"total"': '"${cartListProvider.total}"',
+                    '"list_product"': tmpJson,
+                  };
+
+                  String createResult =
+                      await MKIUrls.createNewInvoice(dataPrint.toString());
+
+                  var rs = jsonDecode(createResult);
+
+                  if (rs['status'].toLowerCase() == 'success') {
+                    String invoiceNo = rs['data']['invoice_no'];
+                    List<ItemsCartData> itemsList = cartListProvider.itemList;
+
+                    if (bluetoothPrint != null) {
+                      MKIMethods.invoicePrintNew(
+                        isPrinterConnect,
+                        bluetoothPrint!,
+                        invoiceNo,
+                        itemsList,
+                        intPayValue == 0
+                            ? '0'
+                            : MKIVariabels.formatter.format(intPayValue),
+                        intChange == 0
+                            ? '0'
+                            : MKIVariabels.formatter.format(intChange),
+                      );
+                    }
+
+                    MKIMethods.showMessage(
+                        context, Colors.green, 'Invoice berhasil ditambahkan');
+                    cartListProvider.clearItemsData();
+
+                    NavigationScreen.startIndex = 1;
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NavigationScreen(),
+                      ),
+                    );
+                  } else {
+                    MKIMethods.showMessage(
+                        context, Colors.redAccent, 'Ada kesalahan data');
+                  }
+                }
+              },
+              child: Text(
+                'Bayar',
+                style: TextStyle(
+                  color: Colors.white, 
+                ),
               ),
             ),
+          ],
+        );
+      },
+    ).then((value) {
+      _totalController.clear();
+      _paymentController.clear();
+      _changeController.clear();
+    });
+  }
+
+  void _showClearCartDialog(
+      BuildContext context, ItemsListCartProvider cartListProvider) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
           ),
-        ],
-      ),
-    ),
-  );
+          title: Row(
+            children: [
+              Icon(
+                Icons.delete_outline,
+                color: MKIColorConstv2.secondary,
+              ),
+              SizedBox(width: 10),
+              Text(
+                'Konfirmasi',
+                style: TextStyle(
+                  color: MKIColorConstv2.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Apakah Anda ingin menghapus keranjang?',
+            style: TextStyle(
+              color: MKIColorConstv2.neutral500,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Tidak',
+                style: TextStyle(
+                  color: MKIColorConstv2.neutral500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MKIColorConstv2.secondary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () {
+                cartListProvider.clearItemsData();
+                Navigator.pop(context);
+              },
+              child: Text(
+                'Ya',
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }

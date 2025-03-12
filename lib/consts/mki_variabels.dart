@@ -17,6 +17,8 @@ class MKIVariabels {
   static const monthlyData = 'monthly';
   static const dailyData = 'daily';
 
+  static const String IS_VALID_LOGIN = 'is_valid_login';
+
   // static String printerStatusKey = 'connectedPrinter';
   // static String deviceKey = 'deviceName';
   // static String printerNameKey = 'printerName';

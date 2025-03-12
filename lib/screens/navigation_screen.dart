@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:karposku/consts/mki_colors.dart';
+import 'package:karposku/consts/mki_colorsv2.dart';
 import 'package:karposku/screens/cart_screen.dart';
 import 'package:karposku/screens/home_screen.dart';
 import 'package:karposku/screens/items_list_screen.dart';
@@ -44,86 +45,101 @@ class _NavigationScreenState extends State<NavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   title: Text(widget.title),
-      // ),
       body: _tabs[_selectedIndex],
-      bottomNavigationBar: NavigationBarTheme(
-        data: NavigationBarThemeData(
-          labelTextStyle: WidgetStateProperty.all(
-            TextStyle(
-              // fontSize: 12.0,
-              fontWeight: FontWeight.bold,
-              color: MKIColorConst.mainBlue,
+      bottomNavigationBar: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+              ),
+              child: BottomNavigationBar(
+                currentIndex: _selectedIndex,
+                onTap: (index) => setState(() => _selectedIndex = index),
+                type: BottomNavigationBarType.fixed,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                selectedItemColor: MKIColorConstv2.primary,
+                unselectedItemColor: MKIColorConstv2.neutral500,
+                selectedFontSize: 12,
+                unselectedFontSize: 12,
+                iconSize: 24,
+                showSelectedLabels: true,
+                showUnselectedLabels: true,
+                items: [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.home_outlined),
+                    activeIcon: Icon(Icons.home),
+                    label: 'Home',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.list_outlined),
+                    activeIcon: Icon(Icons.list),
+                    label: 'Items',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: SizedBox(height: 24),
+                    label: 'Cart',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.analytics_outlined),
+                    activeIcon: Icon(Icons.analytics),
+                    label: 'Sales',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.person_outline),
+                    activeIcon: Icon(Icons.person),
+                    label: 'Profile',
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        child: NavigationBar(
-          // backgroundColor: Colors.grey.withOpacity(0.1),
-          shadowColor: MKIColorConst.mainOrange,
-          // labelBehavior:,
-          indicatorShape: const BeveledRectangleBorder(
-            borderRadius: BorderRadius.all(
-              Radius.circular(13),
+          Positioned(
+            left: 0,
+            right: 0,
+            top: -25,
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedIndex = 2),
+              child: Container(
+                height: 60,
+                width: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: MKIColorConstv2.primary,
+                  boxShadow: [
+                    BoxShadow(
+                      color: MKIColorConstv2.primary.withOpacity(0.3),
+                      spreadRadius: 2,
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  _selectedIndex == 2
+                      ? Icons.shopping_cart
+                      : Icons.shopping_cart_outlined,
+                  size: 32,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
-          elevation: 0,
-          // type: BottomNavigationBarType.fixed,
-          // selectedItemColor: Colors.black,
-          // unselectedItemColor: Colors.grey.shade500,
-          // selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
-          indicatorColor: MKIColorConst.mkiSeaBlue,
-          selectedIndex: _selectedIndex,
-          destinations: [
-            NavigationDestination(
-              icon: Icon(
-                Icons.home,
-                color:
-                    _selectedIndex == 0 ? _selectIconColor : _unSelecIconColor,
-              ),
-              label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(
-                Icons.list,
-                color:
-                    _selectedIndex == 1 ? _selectIconColor : _unSelecIconColor,
-              ),
-              label: 'Items',
-            ),
-            NavigationDestination(
-              icon: Icon(
-                Icons.shopping_cart,
-                color:
-                    _selectedIndex == 2 ? _selectIconColor : _unSelecIconColor,
-              ),
-              label: 'Cart',
-            ),
-            NavigationDestination(
-              icon: Icon(
-                Icons.money_sharp,
-                color:
-                    _selectedIndex == 3 ? _selectIconColor : _unSelecIconColor,
-              ),
-              label: 'Sales',
-            ),
-            NavigationDestination(
-              icon: Icon(
-                Icons.person,
-                color:
-                    _selectedIndex == 4 ? _selectIconColor : _unSelecIconColor,
-              ),
-              label: 'Profile',
-            ),
-          ],
-          onDestinationSelected: (index) {
-            setState(() {
-              _selectedIndex = index;
-              // _selectIconColor = Colors.white;
-              // print(_selectedIndex);
-            });
-          },
-        ),
+        ],
       ),
     );
   }

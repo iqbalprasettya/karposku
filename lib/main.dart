@@ -14,6 +14,7 @@ import 'package:karposku/screens/register_screen.dart';
 import 'package:karposku/screens/navigation_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:karposku/consts/mki_methods.dart';
 
 bool isValidLogin = false;
 
@@ -25,10 +26,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   requestCameraPermission();
 
-  // isValidLogin = await MKIMethods.autoLogin();
-  // if (isValidLogin) {
-  //   MKIMethods.processGetData();
-  // }
+  // Aktifkan auto login
+  isValidLogin = await MKIMethods.autoLogin();
+  if (isValidLogin) {
+    MKIMethods.processGetData();
+  }
 
   runApp(MultiProvider(
     providers: [

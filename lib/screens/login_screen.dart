@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:karposku/consts/mki_colors.dart';
+import 'package:karposku/consts/mki_colorsv2.dart';
 import 'package:karposku/consts/mki_methods.dart';
 import 'package:karposku/consts/mki_styles.dart';
 import 'package:karposku/consts/mki_urls.dart';
@@ -81,252 +82,300 @@ class _LoginScreenState extends State<LoginScreen> {
         width: screenWidth,
         height: screenHeight,
         decoration: BoxDecoration(
-          gradient: MKIColorConst.mainGoldBlueAppBarAlt,
-          // color: MKIColorConst.mainOrange,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              MKIColorConstv2.secondaryDark,
+              MKIColorConstv2.secondary.withOpacity(0.95),
+            ],
+          ),
         ),
-        child: Semantics(
-          label: 'Login screen for users auth',
+        child: SafeArea(
           child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Container(
-                  margin: EdgeInsets.only(top: screenHeight * 0.2),
-                  child: const Text(
-                    'Welcome to \n KARPOSKU',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      decoration: TextDecoration.none,
-                      fontSize: 30,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 5),
-                SizedBox(
-                  width: screenWidth,
-                  // margin: const EdgeInsets.only(left: 20),
-                  // color: Colors.yellow,
-                  child: const Text(
-                    'Fill your details to continue',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      decoration: TextDecoration.none,
-                      fontSize: 17,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 35),
-                /* User Name TextField */
-                MKIStyles.textFieldCustomImage(
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  height: 50,
-                  controller: _phoneController,
-                  textHint: 'Phone',
-                  assetPath: 'assets/images/username.png',
-                  inputType: TextInputType.number,
-                  validationFunc: phoneValidation,
-                  focusNode: _focusNodeUserName,
-                ),
-                const SizedBox(height: 15),
-                /* Password TextField */
-                Container(
-                  width: screenWidth * 0.9,
-                  height: 50,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.all(
-                      Radius.circular(20),
-                    ),
-                  ),
-                  child: TextFormField(
-                    focusNode: _focusNodePassword,
-                    textInputAction: TextInputAction.next,
-                    controller: _passwordController,
-                    obscureText: isVisibleText,
-                    autofocus: false,
-                    decoration: InputDecoration(
-                      hintText: 'Password',
-                      border: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(
-                          Radius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: screenHeight * 0.1),
+                  // Logo or App Name
+                  Center(
+                    child: Container(
+                      padding: EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Container(
+                        padding: EdgeInsets.all(15),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          shape: BoxShape.circle,
                         ),
-                        borderSide: BorderSide(
-                          width: 0,
-                          style: BorderStyle.none,
+                        child: Icon(
+                          Icons.shopping_cart_outlined,
+                          size: 45,
+                          color: Colors.white,
                         ),
                       ),
-                      prefixIcon: Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: Image.asset(
-                          'assets/images/password.png',
-                          width: 20,
-                          height: 20,
-                          fit: BoxFit.scaleDown,
-                        ),
+                    ),
+                  ),
+                  SizedBox(height: 30),
+                  Center(
+                    child: Text(
+                      'KARPOSKU',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 2,
                       ),
-                      suffixIcon: Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: Material(
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(30),
-                            splashColor: Colors.grey,
-                            onTap: () {
-                              setState(() {
-                                isVisibleText = !isVisibleText;
-                              });
-                            },
-                            child: Image.asset(
-                              'assets/images/eye.png',
-                              width: 20,
-                              height: 20,
-                              fit: BoxFit.scaleDown,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Center(
+                    child: Text(
+                      'Masuk untuk melanjutkan',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white.withOpacity(0.8),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 50),
+
+                  // Login Form
+                  Container(
+                    padding: EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Selamat Datang',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: MKIColorConstv2.secondaryDark,
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        // Phone Field
+                        Container(
+                          decoration: BoxDecoration(
+                            color: MKIColorConstv2.neutral200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: TextFormField(
+                            controller: _phoneController,
+                            focusNode: _focusNodeUserName,
+                            keyboardType: TextInputType.number,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: MKIColorConstv2.secondaryDark,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Nomor Telepon',
+                              hintStyle: TextStyle(
+                                color: MKIColorConstv2.neutral400,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.phone_outlined,
+                                color: MKIColorConstv2.secondary,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 15),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    keyboardType: TextInputType.text,
-                    validator: (value) {
-                      return null;
-                    },
-                  ),
-                ),
-                // MoStyles.setTextFieldCustomImage(
-                //   width: MediaQuery.of(context).size.width * 0.9,
-                //   height: 50,
-                //   controller: _passwordController,
-                //   textHint: 'Password',
-                //   assetPath: 'assets/images/password.png',
-                //   inputType: TextInputType.text,
-                //   validationFunc: _passwordValidation,
-                //   focusNode: _focusNodePassword,
-                //   isObsecureText: true,
-                // ),
-                const SizedBox(height: 15),
-                ElevatedButton(
-                  style: MKIStyles.getButtonStyle(
-                      Colors.white, screenWidth * 0.9, 50),
-                  onPressed: () async {
-                    UserData userData;
-
-                    if (_phoneController.text.trim() == '') {
-                      phoneValidation();
-                    } else if (_passwordController.text.trim().length < 3) {
-                      passwordValidation();
-                    } else {
-                      // isValidData = true;
-                      userData = await MKIUrls.fetchUser(
-                        _phoneController.text.trim(),
-                        _passwordController.text.trim(),
-                      );
-                      if (userData.userName != '' && userData.token != '') {
-                        LocalStorage.save(
-                          MKIVariabels.userPhone,
-                          _phoneController.text.trim(),
-                        );
-                        LocalStorage.save(
-                          MKIVariabels.userPassword,
-                          _passwordController.text.trim(),
-                        );
-                        LocalStorage.save(
-                          MKIVariabels.profileName,
-                          userData.userName,
-                        );
-                        LocalStorage.save(
-                          MKIVariabels.picPath,
-                          userData.picPath,
-                        );
-                        LocalStorage.save(
-                          MKIVariabels.token,
-                          userData.token,
-                        );
-
-                        // LocalStorage.save(
-                        //   MKIVariabels.IS_VALID_LOGIN,
-                        //   '1',
-                        // );
-
-                        MKIMethods.processGetData();
-
-                        setState(() {});
-
-                        // Future.delayed(
-                        //   Duration.zero,
-                        //   (() async {
-
-                        //   }),
-                        // );
-
-                        // var tmp =
-                        //     await LocalStorage.load(MKIVariabels.IS_VALID_LOGIN);
-                        // String isValidUser = tmp.toString();
-                        // print('Is Valid User : $isValidUser');
-                        // Navigator.pushNamed(context, BottomMenu.routeName);
-                        // ignore: use_build_context_synchronously
-                        Navigator.pushReplacementNamed(
-                            // ignore: use_build_context_synchronously
-                            context,
-                            NavigationScreen.routeName);
-                      } else {
-                        // ignore: use_build_context_synchronously
-                        MKIMethods.showMessage(
-                            // ignore: use_build_context_synchronously
-                            context,
-                            Colors.redAccent,
-                            'User Password salah');
-                      }
-                    }
-
-                    /*  Next Step If Data is Valid */
-                  },
-                  child: const Text(
-                    'LOGIN',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    InkWell(
-                      onTap: () {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (BuildContext context) =>
-                                const RegisterScreen(),
+                        SizedBox(height: 20),
+                        // Password Field
+                        Container(
+                          decoration: BoxDecoration(
+                            color: MKIColorConstv2.neutral200,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          (route) => false,
-                        );
-                      },
-                      child: Text(
-                        'Register',
-                        style: TextStyle(
-                          color: Colors.white,
+                          child: TextFormField(
+                            controller: _passwordController,
+                            focusNode: _focusNodePassword,
+                            obscureText: isVisibleText,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: MKIColorConstv2.secondaryDark,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Password',
+                              hintStyle: TextStyle(
+                                color: MKIColorConstv2.neutral400,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.lock_outline,
+                                color: MKIColorConstv2.secondary,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  isVisibleText
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                  color: MKIColorConstv2.neutral400,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    isVisibleText = !isVisibleText;
+                                  });
+                                },
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 15),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 30),
+                        // Login Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: MKIColorConstv2.secondary,
+                              padding: EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () async {
+                              UserData userData;
+
+                              if (_phoneController.text.trim() == '') {
+                                phoneValidation();
+                              } else if (_passwordController.text
+                                      .trim()
+                                      .length <
+                                  3) {
+                                passwordValidation();
+                              } else {
+                                userData = await MKIUrls.fetchUser(
+                                  _phoneController.text.trim(),
+                                  _passwordController.text.trim(),
+                                );
+                                if (userData.userName != '' &&
+                                    userData.token != '') {
+                                  LocalStorage.save(
+                                    MKIVariabels.userPhone,
+                                    _phoneController.text.trim(),
+                                  );
+                                  LocalStorage.save(
+                                    MKIVariabels.userPassword,
+                                    _passwordController.text.trim(),
+                                  );
+                                  LocalStorage.save(
+                                    MKIVariabels.profileName,
+                                    userData.userName,
+                                  );
+                                  LocalStorage.save(
+                                    MKIVariabels.picPath,
+                                    userData.picPath,
+                                  );
+                                  LocalStorage.save(
+                                    MKIVariabels.token,
+                                    userData.token,
+                                  );
+                                  LocalStorage.save(
+                                    MKIVariabels.IS_VALID_LOGIN,
+                                    '1',
+                                  );
+
+                                  MKIMethods.processGetData();
+                                  setState(() {});
+                                  Navigator.pushReplacementNamed(
+                                    context,
+                                    NavigationScreen.routeName,
+                                  );
+                                } else {
+                                  MKIMethods.showMessage(
+                                    context,
+                                    Colors.redAccent,
+                                    'User atau Password salah',
+                                  );
+                                }
+                              }
+                            },
+                            child: Text(
+                              'MASUK',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 30),
+
+                  // Register and Face Scan Links
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (BuildContext context) =>
+                                  const RegisterScreen(),
+                            ),
+                            (route) => false,
+                          );
+                        },
+                        child: Text(
+                          'Daftar Akun',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ),
-                    InkWell(
-                      onTap: () {
-                        Navigator.of(context)
-                            .pushNamed(FaceDetectorView.routeName);
-                      },
-                      child: Text(
-                        'Face Scan',
-                        style: TextStyle(
-                          color: Colors.white,
+                      Container(
+                        height: 15,
+                        width: 1,
+                        color: Colors.white.withOpacity(0.5),
+                        margin: EdgeInsets.symmetric(horizontal: 10),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context)
+                              .pushNamed(FaceDetectorView.routeName);
+                        },
+                        child: Text(
+                          'Face Scan',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

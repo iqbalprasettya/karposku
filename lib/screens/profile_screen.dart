@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:karposku/consts/mki_colors.dart';
+import 'package:karposku/consts/mki_colorsv2.dart';
 import 'package:karposku/consts/mki_methods.dart';
 import 'package:karposku/consts/mki_urls.dart';
 import 'package:karposku/consts/mki_variabels.dart';
@@ -142,512 +143,435 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        // backgroundColor: MKIColorConst.mainToscaBlue,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: MKIColorConst.mainGoldBlueAppBar,
-          ),
-        ),
-        centerTitle: true,
-        title: Text(
-          'PROFILE',
-          style: TextStyle(color: MKIColorConst.mainBlue),
-        ),
-        actions: [
-          Stack(
-            alignment: AlignmentDirectional.centerEnd,
-            children: [
-              Semantics(
-                  label: 'Action to adding new data',
-                  button: true,
-                  child: InkWell(
-                    splashColor: Colors.grey,
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () {
-                      LocalStorage.remove(MKIVariabels.userPhone);
-                      LocalStorage.remove(MKIVariabels.userPassword);
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder: (BuildContext context) =>
-                              const LoginScreen(),
-                        ),
-                        (route) => false,
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(2),
-                      child: Semantics(
-                        label: 'Icon with InkWell for adding new data',
-                        child: Icon(
-                          Icons.logout,
-                          color: MKIColorConst.mkiSilver,
-                          size: 45,
-                        ),
-                      ),
-                    ),
-                  )),
-            ],
-          ),
-        ],
-      ),
-      // body: FutureBuilder(
-      //   future: getUserProfile(),
-      //   builder: (BuildContext context, AsyncSnapshot<UserData> snapshot) {
-      //     if (snapshot.connectionState == ConnectionState.waiting) {
-      //       return const Center(child: CircularProgressIndicator());
-      //     }
-      //     return Column(
-      //       children: [
-      //         Container(
-      //           width: screenWidth,
-      //           child: Center(
-      //             child: InkWell(
-      //               onTap: pickImage,
-      //               child: tmpImgFile != null
-      //                   ? CircleAvatar(
-      //                       backgroundImage: FileImage(tmpImgFile!),
-      //                     )
-      //                   : snapshot.data!.picPath != ''
-      //                       ? CircleAvatar(
-      //                           minRadius: 30,
-      //                           maxRadius: 60,
-      //                           backgroundImage: NetworkImage(
-      //                             snapshot.data!.picPath,
-      //                             // scale: 20,
-      //                           ),
-      //                           // NetworkImage(),
-      //                         )
-      //                       : Image.asset(
-      //                           'assets/images/camera.png',
-      //                           width: 80,
-      //                         ),
-      //               // : ClipRRect(
-      //               //     child: Image.asset('assets/images/person.png'),
-      //               //   ),
-      //             ),
-      //           ),
-      //         )
-      //       ],
-      //     );
-      //   },
-      // )
-      body: SizedBox(
+      body: Container(
         width: screenWidth,
         height: screenHeight,
-        child: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: FutureBuilder(
-            future: getUserProfile(),
-            builder: (BuildContext context, AsyncSnapshot<UserData> snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasData) {
-                return ListView(
-                  children: ListTile.divideTiles(
-                    color: Colors.grey,
-                    tiles: [
-                      Container(
-                        margin: const EdgeInsets.only(top: 5, bottom: 20),
-                        // padding: const EdgeInsets.only(top: 13),
-                        child: InkWell(
-                          onTap: pickImage,
-                          child: tmpImgFile != null
-                              ? CircleAvatar(
-                                  minRadius: 40,
-                                  maxRadius: 70,
-                                  backgroundImage: FileImage(tmpImgFile!),
-                                )
-                              : snapshot.data!.picPath != ''
-                                  ? CircleAvatar(
-                                      minRadius: 40,
-                                      maxRadius: 70,
+        decoration: BoxDecoration(
+          color: MKIColorConstv2.neutral200,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Header section
+              Container(
+                padding: EdgeInsets.only(top: 50, bottom: 20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      MKIColorConstv2.secondaryDark,
+                      MKIColorConstv2.secondary.withOpacity(0.95),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Profile',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: MKIColorConstv2.neutral100,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              LocalStorage.remove(MKIVariabels.userPhone);
+                              LocalStorage.remove(MKIVariabels.userPassword);
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (BuildContext context) =>
+                                      const LoginScreen(),
+                                ),
+                                (route) => false,
+                              );
+                            },
+                            icon: Icon(
+                              Icons.logout,
+                              color: MKIColorConstv2.neutral100,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-                                      backgroundImage: NetworkImage(
-                                        snapshot.data!.picPath,
-                                        // scale: 10,
-                                      ),
-                                      // NetworkImage(),
-                                    )
-                                  : Image.asset(
-                                      'assets/images/camera.png',
-                                      width: 80,
-                                    ),
-                          // : ClipRRect(
-                          //     child: Image.asset('assets/images/person.png'),
-                          //   ),
-                        ),
-                      ),
-                      // ListTile(
-                      //   leading: Text(
-                      //     'Photo',
-                      //     style: TextStyle(color: MKIColorConst.mainBlue),
-                      //   ),
-                      //   trailing: InkWell(
-                      //     onTap: pickImage,
-                      //     child: tmpImgFile != null
-                      //         ? CircleAvatar(
-                      //             backgroundImage: FileImage(tmpImgFile!),
-                      //           )
-                      //         : snapshot.data!.picPath != ''
-                      //             ? CircleAvatar(
-                      //                 backgroundImage: NetworkImage(
-                      //                   snapshot.data!.picPath,
-                      //                   // scale: 10,
-                      //                 ),
-                      //                 // NetworkImage(),
-                      //               )
-                      //             : Image.asset(
-                      //                 'assets/images/camera.png',
-                      //                 width: 80,
-                      //               ),
-                      //   ),
-                      // ),
-                      ListTile(
-                        leading: Text(
-                          'Name',
-                          style: TextStyle(
-                            color: MKIColorConst.mainBlue,
-                            fontSize: 15,
+              // Profile Content
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: FutureBuilder(
+                  future: getUserProfile(),
+                  builder:
+                      (BuildContext context, AsyncSnapshot<UserData> snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasData) {
+                      return Column(
+                        children: [
+                          // Profile Image
+                          InkWell(
+                            onTap: pickImage,
+                            child: Container(
+                              padding: EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: MKIColorConstv2.secondary,
+                                  width: 2,
+                                ),
+                              ),
+                              child: CircleAvatar(
+                                radius: 60,
+                                backgroundColor: MKIColorConstv2.neutral100,
+                                child: tmpImgFile != null
+                                    ? ClipOval(
+                                        child: Image.file(
+                                          tmpImgFile!,
+                                          width: 120,
+                                          height: 120,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : snapshot.data!.picPath != ''
+                                        ? ClipOval(
+                                            child: Image.network(
+                                              snapshot.data!.picPath,
+                                              width: 120,
+                                              height: 120,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                return Icon(
+                                                  Icons.person,
+                                                  size: 50,
+                                                  color: MKIColorConstv2
+                                                      .neutral400,
+                                                );
+                                              },
+                                            ),
+                                          )
+                                        : Icon(
+                                            Icons.camera_alt,
+                                            size: 40,
+                                            color: MKIColorConstv2.neutral400,
+                                          ),
+                              ),
+                            ),
                           ),
-                        ),
-                        trailing: Text(
-                          snapshot.data!.userName,
-                          style: TextStyle(
-                            color: MKIColorConst.mainBlue,
-                            fontSize: 15,
+                          SizedBox(height: 30),
+
+                          // Profile Info Cards
+                          _buildProfileCard(
+                            'Nama',
+                            snapshot.data!.userName,
+                            Icons.person_outline,
                           ),
-                        ),
-                      ),
-                      ListTile(
-                        leading: Text(
-                          'Phone',
-                          style: TextStyle(
-                            color: MKIColorConst.mainBlue,
-                            fontSize: 15,
+                          SizedBox(height: 15),
+                          _buildProfileCard(
+                            'No. Telepon',
+                            snapshot.data!.phoneNo,
+                            Icons.phone_outlined,
                           ),
-                        ),
-                        trailing: Text(
-                          snapshot.data!.phoneNo,
-                          style: TextStyle(
-                            color: MKIColorConst.mainBlue,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                      // const ListTile(
-                      //   leading: Text('Email'),
-                      //   trailing: Text('andarussa@gmail.com'),
-                      // ),
-                      ListTile(
-                        leading: Text(
-                          'Password',
-                          style: TextStyle(
-                            color: MKIColorConst.mainBlue,
-                            fontSize: 15,
-                          ),
-                        ),
-                        trailing: IconButton(
-                          alignment: Alignment.centerRight,
-                          onPressed: () {
-                            showDialog(
+                          SizedBox(height: 15),
+                          InkWell(
+                            onTap: () {
+                              showDialog(
                                 context: context,
                                 builder: (BuildContext context) {
                                   return AlertDialog(
-                                    contentPadding: EdgeInsets.zero,
-                                    content: Stack(
-                                      // overflow: Overflow.visible,
-                                      children: <Widget>[
-                                        Form(
-                                          key: _formKey,
-                                          child: SingleChildScrollView(
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: <Widget>[
-                                                const SizedBox(height: 60),
-                                                getTextPadding(
-                                                  "Old Password",
-                                                  Icons.key,
-                                                  Colors.grey.withOpacity(0.4),
-                                                  _oldPassController,
-                                                  _focusNodeOldPass,
-                                                ),
-                                                getTextPadding(
-                                                  "New Password",
-                                                  Icons.key,
-                                                  Colors.grey.withOpacity(0.4),
-                                                  _newPassController,
-                                                  _focusNodeNewPass,
-                                                ),
-                                                getTextPadding(
-                                                  "Confirm Password",
-                                                  Icons.key,
-                                                  Colors.grey.withOpacity(0.4),
-                                                  _confirmPassController,
-                                                  _focusNodeConfirmPass,
-                                                ),
-                                                Container(
-                                                  alignment:
-                                                      Alignment.centerRight,
-                                                  // padding: EdgeInsets.all(10),
-                                                  margin: const EdgeInsets.only(
-                                                      right: 10, bottom: 5),
-                                                  child: ElevatedButton(
-                                                    style: ElevatedButton
-                                                        .styleFrom(
-                                                      // primary: MKIColorConst
-                                                      // .mainLightBlue,
-                                                      backgroundColor:
-                                                          MKIColorConst
-                                                              .mkiDeepBlue
-                                                              .withOpacity(0.7),
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(30),
-                                                      ),
-                                                    ),
-                                                    child: const Text(
-                                                      "Submit",
-                                                      style: TextStyle(
-                                                          color: Colors.white),
-                                                    ),
-                                                    onPressed: () async {
-                                                      String oldPass =
-                                                          _oldPassController
-                                                              .text;
-                                                      String newPass =
-                                                          _newPassController
-                                                              .text;
-                                                      String confPass =
-                                                          _confirmPassController
-                                                              .text;
-
-                                                      // print(oldPass);
-                                                      // print(newPass);
-                                                      // print(confPass);
-
-                                                      if (oldPass.trim() ==
-                                                          '') {
-                                                        textValidation(
-                                                          "Password lama harus diisi",
-                                                          _focusNodeOldPass,
-                                                          Colors.redAccent,
-                                                        );
-                                                      } else if (newPass
-                                                              .trim() ==
-                                                          '') {
-                                                        textValidation(
-                                                          "Password baru harus diisi",
-                                                          _focusNodeNewPass,
-                                                          Colors.redAccent,
-                                                        );
-                                                      } else if (newPass !=
-                                                          confPass) {
-                                                        textValidation(
-                                                          'Password baru dan konfirmasi tidak sama',
-                                                          _focusNodeConfirmPass,
-                                                          Colors.redAccent,
-                                                        );
-                                                      } else {
-                                                        String? passMessage;
-                                                        passMessage =
-                                                            await MKIUrls
-                                                                .updatePass(
-                                                          oldPass,
-                                                          newPass,
-                                                          confPass,
-                                                        );
-
-                                                        // print(
-                                                        //     'Message : $passMessage');
-
-                                                        if (passMessage ==
-                                                            'success') {
-                                                          textValidation(
-                                                            'Password Berhasil Diupdate',
-                                                            _focusNodeConfirmPass,
-                                                            Colors.green,
-                                                          );
-                                                          // ignore: use_build_context_synchronously
-                                                          Navigator.pop(
-                                                              // ignore: use_build_context_synchronously
-                                                              context);
-                                                          // ignore: use_build_context_synchronously
-                                                          Navigator
-                                                              .pushReplacementNamed(
-                                                            // ignore: use_build_context_synchronously
-                                                            context,
-                                                            LoginScreen
-                                                                .routeName,
-                                                          );
-                                                        } else {
-                                                          textValidation(
-                                                            'Password lama salah',
-                                                            _focusNodeConfirmPass,
-                                                            Colors.redAccent,
-                                                          );
-                                                        }
-                                                      }
-                                                      // if (_formKey.currentState
-                                                      //     .validate()) {
-                                                      //   _formKey.currentState.save();
-                                                      // }
-                                                    },
-                                                  ),
-                                                )
-                                              ],
-                                            ),
-                                          ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                    title: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.lock_outline,
+                                          color: MKIColorConstv2.secondary,
                                         ),
-                                        Positioned(
-                                          top: 0,
-                                          left: 0,
-                                          child: Container(
-                                            height: 60,
-                                            width: MediaQuery.of(context)
-                                                .size
-                                                .width,
-                                            decoration: BoxDecoration(
-                                                gradient: MKIColorConst
-                                                    .mainGoldBlueAppBar,
-                                                // color:
-                                                // MKIColorConst.mainToscaBlue,
-                                                // color: Colors.yellow
-                                                //     .withOpacity(0.2),
-                                                border: Border(
-                                                    bottom: BorderSide(
-                                                        color: Colors.grey
-                                                            .withOpacity(
-                                                                0.3)))),
-                                            child: Container(
-                                              padding: const EdgeInsets.only(
-                                                  left: 30),
-                                              alignment: Alignment.centerLeft,
-                                              child: const Text(
-                                                "Change Password",
-                                                style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.w700,
-                                                    fontSize: 20,
-                                                    fontStyle: FontStyle.italic,
-                                                    fontFamily: "Helvetica"),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        Positioned(
-                                          right: 12,
-                                          top: 15.0,
-                                          child: InkResponse(
-                                            onTap: () {
-                                              Navigator.pop(context);
-                                            },
-                                            child: CircleAvatar(
-                                              radius: 12,
-                                              backgroundColor: MKIColorConst
-                                                  .mkiDeepBlue
-                                                  .withOpacity(0.7),
-                                              child: const Icon(
-                                                Icons.close,
-                                                color: Colors.white,
-                                                size: 18,
-                                              ),
-                                            ),
+                                        SizedBox(width: 10),
+                                        Text(
+                                          'Ubah Password',
+                                          style: TextStyle(
+                                            color: MKIColorConstv2.secondary,
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ],
                                     ),
+                                    content: Form(
+                                      key: _formKey,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          _buildPasswordField(
+                                            "Password Lama",
+                                            _oldPassController,
+                                            _focusNodeOldPass,
+                                          ),
+                                          SizedBox(height: 15),
+                                          _buildPasswordField(
+                                            "Password Baru",
+                                            _newPassController,
+                                            _focusNodeNewPass,
+                                          ),
+                                          SizedBox(height: 15),
+                                          _buildPasswordField(
+                                            "Konfirmasi Password",
+                                            _confirmPassController,
+                                            _focusNodeConfirmPass,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: Text(
+                                          'Batal',
+                                          style: TextStyle(
+                                            color: MKIColorConstv2.neutral500,
+                                          ),
+                                        ),
+                                      ),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              MKIColorConstv2.secondary,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        onPressed: () async {
+                                          String oldPass =
+                                              _oldPassController.text;
+                                          String newPass =
+                                              _newPassController.text;
+                                          String confPass =
+                                              _confirmPassController.text;
+
+                                          if (oldPass.trim() == '') {
+                                            textValidation(
+                                              "Password lama harus diisi",
+                                              _focusNodeOldPass,
+                                              Colors.redAccent,
+                                            );
+                                          } else if (newPass.trim() == '') {
+                                            textValidation(
+                                              "Password baru harus diisi",
+                                              _focusNodeNewPass,
+                                              Colors.redAccent,
+                                            );
+                                          } else if (newPass != confPass) {
+                                            textValidation(
+                                              'Password baru dan konfirmasi tidak sama',
+                                              _focusNodeConfirmPass,
+                                              Colors.redAccent,
+                                            );
+                                          } else {
+                                            String? passMessage =
+                                                await MKIUrls.updatePass(
+                                              oldPass,
+                                              newPass,
+                                              confPass,
+                                            );
+
+                                            if (passMessage == 'success') {
+                                              textValidation(
+                                                'Password Berhasil Diupdate',
+                                                _focusNodeConfirmPass,
+                                                Colors.green,
+                                              );
+                                              Navigator.pop(context);
+                                              Navigator.pushReplacementNamed(
+                                                context,
+                                                LoginScreen.routeName,
+                                              );
+                                            } else {
+                                              textValidation(
+                                                'Password lama salah',
+                                                _focusNodeConfirmPass,
+                                                Colors.redAccent,
+                                              );
+                                            }
+                                          }
+                                        },
+                                        child: Text(
+                                          'Simpan',
+                                          style: TextStyle(
+                                            color: MKIColorConstv2.neutral100,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   );
-                                }).then((value) {
-                              _oldPassController.clear();
-                              _newPassController.clear();
-                              _confirmPassController.clear();
-                            });
-                          },
-                          icon: const Icon(Icons.navigate_next),
-                        ),
-                      ),
-                      // ListTile(
-                      //   leading: Text(
-                      //     'Reseller',
-                      //     style: TextStyle(color: MKIColorConst.mainBlue),
-                      //   ),
-                      //   trailing: Text(
-                      //     'CHANGE THIS',
-                      //     style: TextStyle(color: MKIColorConst.mainBlue),
-                      //   ),
-                      // ),
-                      ListTile(
-                        leading: InkWell(
-                          onTap: () {
-                            // LocalStorage.remove(MKIVariabels.IS_VALID_LOGIN);
-                            LocalStorage.remove(MKIVariabels.userPhone);
-                            LocalStorage.remove(MKIVariabels.userPassword);
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                builder: (BuildContext context) =>
-                                    const LoginScreen(),
+                                },
+                              ).then((value) {
+                                _oldPassController.clear();
+                                _newPassController.clear();
+                                _confirmPassController.clear();
+                              });
+                            },
+                            child: _buildProfileCard(
+                              'Password',
+                              '••••••••',
+                              Icons.lock_outline,
+                              showArrow: true,
+                            ),
+                          ),
+                          SizedBox(height: 30),
+
+                          // Logout Button
+                          Container(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: MKIColorConstv2.secondary,
+                                padding: EdgeInsets.symmetric(vertical: 15),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
-                              (route) => false,
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.only(
-                              left: 20,
-                              right: 20,
-                              top: 10,
-                              bottom: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(30),
-                              color: MKIColorConst.mkiDeepBlue.withOpacity(0.7),
-                            ),
-                            child: const Text(
-                              'Logout',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                // color: MKIColorConst.mainBlue,
-                                color: Colors.white,
-                                fontSize: 15,
+                              onPressed: () {
+                                LocalStorage.remove(MKIVariabels.userPhone);
+                                LocalStorage.remove(MKIVariabels.userPassword);
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (BuildContext context) =>
+                                        const LoginScreen(),
+                                  ),
+                                  (route) => false,
+                                );
+                              },
+                              child: Text(
+                                'Keluar',
+                                style: TextStyle(
+                                  color: MKIColorConstv2.neutral100,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
+                        ],
+                      );
+                    } else {
+                      return Center(
+                        child: Text(
+                          'Data Tidak Ditemukan',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: MKIColorConstv2.neutral500,
+                          ),
                         ),
-                      ),
-                    ],
-                    // tiles: _profile.map(
-                    // (item) => ListTile(
-                    // leading: Text(item['title']),
-                    // leading: CircleAvatar(
-                    //   backgroundColor: Colors.amber,
-                    //   child: Text(item['id'].toString()),
-                    // ),
-                    // title: Text(item['title']),
-                    // subtitle: Text(item['subtitle']),
-                    // trailing: Image.asset('assets/images/eye.png'),
-                    // trailing: IconButton(
-                    //   icon: Icon(Icons.delete),
-                    //   onPressed: () {},
-                    // ),
-                    // ),
-                    // ),
-                  ).toList(),
-                );
-              } else {
-                return Center(
-                  child: Text(
-                    'Data Tidak Ditemukan',
-                    style:
-                        TextStyle(fontSize: 20, color: MKIColorConst.mainBlue),
-                  ),
-                );
-              }
-            },
+                      );
+                    }
+                  },
+                ),
+              ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileCard(String label, String value, IconData icon,
+      {bool showArrow = false}) {
+    return Container(
+      padding: EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: MKIColorConstv2.neutral100,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: MKIColorConstv2.neutral300,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: MKIColorConstv2.secondary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: MKIColorConstv2.secondary,
+              size: 20,
+            ),
+          ),
+          SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: MKIColorConstv2.neutral500,
+                    fontSize: 12,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: MKIColorConstv2.secondaryDark,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (showArrow)
+            Icon(
+              Icons.arrow_forward_ios,
+              color: MKIColorConstv2.neutral400,
+              size: 16,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPasswordField(
+      String hint, TextEditingController controller, FocusNode focusNode) {
+    return Container(
+      decoration: BoxDecoration(
+        color: MKIColorConstv2.neutral200,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: TextFormField(
+        controller: controller,
+        focusNode: focusNode,
+        obscureText: true,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(
+            color: MKIColorConstv2.neutral400,
+            fontSize: 14,
+          ),
+          contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+          border: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
         ),
       ),
     );

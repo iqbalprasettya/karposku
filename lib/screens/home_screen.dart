@@ -13,8 +13,6 @@ import 'package:karposku/screens/profile_screen.dart';
 // import 'package:karposku/consts/mki_styles.dart';
 // import 'package:karposku/consts/mki_variabels.dart';
 
-String profilePath = '';
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -25,10 +23,20 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  void setImgPath() async {
-    profilePath = await MKIUrls.profileImage();
-    // print("Profile : " + profilePath);
-    // setState(() {});
+  String profilePath = '';
+
+  Future<void> setImgPath() async {
+    try {
+      final path = await MKIUrls.profileImage();
+      setState(() {
+        profilePath =
+            path.isNotEmpty ? path : 'https://via.placeholder.com/150';
+      });
+    } catch (e) {
+      setState(() {
+        profilePath = 'https://via.placeholder.com/150';
+      });
+    }
   }
 
   @override
@@ -113,7 +121,27 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: CircleAvatar(
                           radius: 25,
                           backgroundColor: MKIColorConstv2.neutral100,
-                          backgroundImage: NetworkImage(profilePath),
+                          child: profilePath.isNotEmpty
+                              ? ClipOval(
+                                  child: Image.network(
+                                    profilePath,
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Icon(
+                                        Icons.person,
+                                        size: 30,
+                                        color: MKIColorConstv2.neutral400,
+                                      );
+                                    },
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.person,
+                                  size: 30,
+                                  color: MKIColorConstv2.neutral400,
+                                ),
                         ),
                       ),
                     ],
@@ -197,18 +225,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisSpacing: 16,
                   children: [
                     _buildMenuItem('Absensi', Icons.badge_outlined, () {
-                      // Route disabled
+                      _showComingSoonDialog();
                     }, iconColor: MKIColorConstv2.secondary),
                     _buildMenuItem('Printer', Icons.print_outlined, () {
-                      NavigationScreen.startIndex = 1;
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const PrinterListScreen()));
+                    }, iconColor: MKIColorConstv2.secondary),
+                    _buildMenuItem('Keranjang', Icons.shopping_cart_rounded,
+                        () {
+                      NavigationScreen.startIndex = 2;
                       Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
                               builder: (context) => const NavigationScreen()));
                     }, iconColor: MKIColorConstv2.secondary),
-                    _buildMenuItem('Keranjang', Icons.shopping_cart_rounded,
-                        () {
-                      NavigationScreen.startIndex = 2;
+                    _buildMenuItem('Items', Icons.inventory_2_rounded, () {
+                      NavigationScreen.startIndex = 1;
                       Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
@@ -234,16 +268,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           MaterialPageRoute(
                               builder: (context) => const LogoAboutScreen()));
                     }, iconColor: MKIColorConstv2.secondary),
-                    _buildMenuItem('Riwayat', Icons.history_rounded, () {
-                      NavigationScreen.startIndex =
-                          3; // Mengarah ke halaman Laporan/Invoice
-                      Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const NavigationScreen()));
-                    }, iconColor: MKIColorConstv2.secondary),
                     _buildMenuItem('Lainnya', Icons.grid_view_rounded, () {
-                      // Route disabled
+                      _showComingSoonDialog();
                     }, iconColor: MKIColorConstv2.secondary),
                   ],
                 ),
@@ -397,6 +423,53 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showComingSoonDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.access_time,
+                color: MKIColorConstv2.secondary,
+              ),
+              SizedBox(width: 10),
+              Text(
+                'Segera Hadir!',
+                style: TextStyle(
+                  color: MKIColorConstv2.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Fitur ini sedang dalam pengembangan dan akan segera hadir untuk Anda.',
+            style: TextStyle(
+              color: MKIColorConstv2.neutral500,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Tutup',
+                style: TextStyle(
+                  color: MKIColorConstv2.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
