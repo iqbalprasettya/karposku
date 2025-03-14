@@ -1,5 +1,4 @@
-import 'package:bluetooth_print/bluetooth_print.dart';
-import 'package:bluetooth_print/bluetooth_print_model.dart';
+import 'package:karposku/utilities/printer_adapter.dart';
 import 'package:flutter/material.dart';
 
 class PrinterProvider with ChangeNotifier {

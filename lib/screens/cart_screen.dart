@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:bluetooth_print/bluetooth_print.dart';
+import 'package:karposku/utilities/printer_adapter.dart';
 import 'package:flutter/material.dart';
 import 'package:karposku/consts/mki_colors.dart';
 import 'package:karposku/consts/mki_colorsv2.dart';
@@ -868,7 +868,7 @@ class _CartScreenState extends State<CartScreen> {
               child: Text(
                 'Bayar',
                 style: TextStyle(
-                  color: Colors.white, 
+                  color: Colors.white,
                 ),
               ),
             ),
