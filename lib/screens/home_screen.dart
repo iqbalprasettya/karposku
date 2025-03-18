@@ -10,6 +10,7 @@ import 'package:karposku/screens/printers/printer_list_screen.dart';
 import 'package:karposku/screens/cart_screen.dart';
 import 'package:karposku/screens/invoice_list_screen.dart';
 import 'package:karposku/screens/profile_screen.dart';
+import 'package:karposku/screens/packing_screen.dart';
 // import 'package:karposku/consts/mki_styles.dart';
 // import 'package:karposku/consts/mki_variabels.dart';
 
@@ -224,8 +225,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
                   children: [
-                    _buildMenuItem('Absensi', Icons.badge_outlined, () {
-                      _showComingSoonDialog();
+                    _buildMenuItem('Packing', Icons.inventory_2_rounded, () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const PackingScreen()));
                     }, iconColor: MKIColorConstv2.secondary),
                     _buildMenuItem('Printer', Icons.print_outlined, () {
                       Navigator.push(
@@ -241,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           MaterialPageRoute(
                               builder: (context) => const NavigationScreen()));
                     }, iconColor: MKIColorConstv2.secondary),
-                    _buildMenuItem('Items', Icons.inventory_2_rounded, () {
+                    _buildMenuItem('Items', Icons.list_alt_rounded, () {
                       NavigationScreen.startIndex = 1;
                       Navigator.pushReplacement(
                           context,
