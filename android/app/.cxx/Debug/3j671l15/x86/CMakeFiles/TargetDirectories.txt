@@ -1,0 +1,2 @@
+D:/iqbalprasettya/flutter/karposku/android/app/.cxx/Debug/3j671l15/x86/CMakeFiles/edit_cache.dir
+D:/iqbalprasettya/flutter/karposku/android/app/.cxx/Debug/3j671l15/x86/CMakeFiles/rebuild_cache.dir

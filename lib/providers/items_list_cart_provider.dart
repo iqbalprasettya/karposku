@@ -66,24 +66,7 @@ class ItemsListCartProvider with ChangeNotifier {
   // }
 
   bool isDataExists(String itemsId) {
-    ItemsCartData newItemsData =
-        _itemList.firstWhere((itemsNew) => itemsNew.itemsId == itemsId,
-            orElse: () => ItemsCartData(
-                  itemsId: '',
-                  itemsCode: '',
-                  itemsName: '',
-                  itemsPrice: '',
-                  qty: 0,
-                  itemsIcon: '',
-                ));
-    bool isDataExists = false;
-    if (newItemsData.itemsName != '') {
-      isDataExists = true;
-      // print('Data sudah ada');
-    } else {
-      // print('Data belum ada');
-    }
-    return isDataExists;
+    return _itemList.any((item) => item.itemsId == itemsId);
   }
 
   void removeItemData(String itemsId) {

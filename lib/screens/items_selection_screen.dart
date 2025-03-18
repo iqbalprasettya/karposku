@@ -5,8 +5,10 @@ import 'package:karposku/consts/mki_urls.dart';
 import 'package:karposku/consts/mki_variabels.dart';
 import 'package:karposku/models/items_cart_data.dart';
 import 'package:karposku/models/items_data.dart';
+import 'package:karposku/models/items_category.dart';
 import 'package:karposku/providers/items_list_cart_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:karposku/consts/mki_tabs_widget.dart';
 
 class ItemsSelectionScreen extends StatefulWidget {
   const ItemsSelectionScreen({super.key});
@@ -17,32 +19,82 @@ class ItemsSelectionScreen extends StatefulWidget {
   State<ItemsSelectionScreen> createState() => _ItemsSelectionScreenState();
 }
 
-class _ItemsSelectionScreenState extends State<ItemsSelectionScreen> {
+class _ItemsSelectionScreenState extends State<ItemsSelectionScreen>
+    with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   List<ItemsData> itemsList = [];
   List<ItemsData> filteredItems = [];
+  late TabController _tabController;
+  List<String> categories = ['Semua']; // Mulai dengan Semua
+  List<ItemsCategory> categoryList = [];
+
+  // Tambahkan map untuk menyimpan items yang sudah difilter per kategori
+  Map<String, List<ItemsData>> categorizedItems = {};
 
   @override
   void initState() {
     super.initState();
-    _loadItems();
+    _tabController = TabController(length: categories.length, vsync: this);
+    _loadItemsAndCategories();
   }
 
-  void _loadItems() async {
-    // Menggunakan method yang sudah ada untuk load items
-    itemsList = await MKIUrls.getItemsList();
+  void _handleTabSelection() {
+    String selectedCategory = categories[_tabController.index];
     setState(() {
+      filteredItems = categorizedItems[selectedCategory] ?? [];
+    });
+  }
+
+  void _loadItemsAndCategories() async {
+    // Load kategori terlebih dahulu
+    categoryList = await MKIUrls.getItemsCategory();
+
+    // Load items
+    itemsList = await MKIUrls.getItemsList();
+
+    // Pre-filter items berdasarkan kategori
+    setState(() {
+      // Inisialisasi kategori 'Semua' dengan semua items
+      categorizedItems = {'Semua': itemsList};
+
+      // Filter items untuk setiap kategori
+      for (var category in categoryList) {
+        categorizedItems[category.categoryName] = itemsList
+            .where((item) => item.itemsCategory == category.categoryId)
+            .toList();
+      }
+
+      // Set up categories list
+      categories = ['Semua'];
+      categories.addAll(categoryList.map((cat) => cat.categoryName));
+
+      // Set filtered items awal ke 'Semua'
       filteredItems = itemsList;
+
+      // Reinisialisasi TabController
+      _tabController.dispose();
+      _tabController = TabController(length: categories.length, vsync: this);
+      _tabController.addListener(_handleTabSelection);
     });
   }
 
   void _filterItems(String query) {
     setState(() {
-      filteredItems = itemsList
-          .where((item) =>
-              item.itemsName.toLowerCase().contains(query.toLowerCase()) ||
-              item.itemsCode.toLowerCase().contains(query.toLowerCase()))
-          .toList();
+      if (query.isEmpty) {
+        // Jika query kosong, kembalikan ke kategori yang sedang aktif
+        String currentCategory = categories[_tabController.index];
+        filteredItems = categorizedItems[currentCategory] ?? [];
+      } else {
+        // Filter dari kategori yang sedang aktif
+        String currentCategory = categories[_tabController.index];
+        List<ItemsData> categoryItems = categorizedItems[currentCategory] ?? [];
+
+        filteredItems = categoryItems
+            .where((item) =>
+                item.itemsName.toLowerCase().contains(query.toLowerCase()) ||
+                item.itemsCode.toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      }
     });
   }
 
@@ -55,22 +107,29 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen> {
         ),
         child: Column(
           children: [
-            // Header with Search
+            // Header with Search and Tabs
             Container(
-              padding: EdgeInsets.only(top: 50, bottom: 20),
+              padding: EdgeInsets.only(top: 50, bottom: 0),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    MKIColorConstv2.secondaryDark,
-                    MKIColorConstv2.secondary.withOpacity(0.95),
+                    MKIColorConstv2.primaryDark,
+                    MKIColorConstv2.primary.withOpacity(0.95),
                   ],
                 ),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(30),
                   bottomRight: Radius.circular(30),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: MKIColorConstv2.primary.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
@@ -78,20 +137,39 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
                       children: [
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: Icon(
-                            Icons.arrow_back,
-                            color: MKIColorConstv2.neutral100,
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: Icon(
+                              Icons.arrow_back,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                        Text(
-                          'Pilih Barang',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: MKIColorConstv2.neutral100,
-                          ),
+                        SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Pilih Barang',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              'Ketuk dua kali untuk memilih',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white.withOpacity(0.8),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -103,37 +181,75 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: TextField(
                         controller: _searchController,
                         onChanged: _filterItems,
                         decoration: InputDecoration(
-                          hintText: 'Cari barang...',
-                          prefixIcon: Icon(Icons.search),
+                          hintText: 'Cari nama atau kode barang...',
+                          prefixIcon: Icon(Icons.search,
+                              color: MKIColorConstv2.primary),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _filterItems('');
+                                  },
+                                )
+                              : null,
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 20),
                         ),
                       ),
                     ),
                   ),
+                  SizedBox(height: 16),
+                  // Category Tabs
+                  TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    indicatorColor: Colors.white,
+                    indicatorWeight: 3,
+                    labelColor: Colors.white,
+                    unselectedLabelColor: Colors.white.withOpacity(0.7),
+                    tabs: categories
+                        .map((category) => Tab(
+                              text: category,
+                            ))
+                        .toList(),
+                  ),
                 ],
               ),
             ),
 
-            // Items Grid
+            // Content Area with TabBarView
             Expanded(
-              child: GridView.builder(
-                padding: EdgeInsets.all(16),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.72,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                ),
-                itemCount: filteredItems.length,
-                itemBuilder: (context, index) {
-                  return _buildItemCard(context, filteredItems[index]);
-                },
+              child: TabBarView(
+                controller: _tabController,
+                children: categories.map((category) {
+                  final items = categorizedItems[category] ?? [];
+                  return GridView.builder(
+                    padding: EdgeInsets.all(16),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.72,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      return _buildItemCard(context, items[index]);
+                    },
+                  );
+                }).toList(),
               ),
             ),
           ],
@@ -158,24 +274,45 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(15),
         onTap: () {
+          // Tampilkan hint untuk double tap
+          MKIMethods.showMessage(
+            context,
+            MKIColorConstv2.secondary,
+            'Ketuk dua kali untuk memilih ${item.itemsName}',
+          );
+        },
+        onDoubleTap: () {
           var packingListProvider =
               Provider.of<ItemsListCartProvider>(context, listen: false);
 
-          ItemsCartData dataItems = ItemsCartData(
-            itemsId: item.itemsId,
-            itemsCode: item.itemsCode,
-            itemsName: item.itemsName,
-            itemsPrice: item.finalPrice.toString(),
-            qty: 1,
-            itemsIcon: item.imgPath,
-          );
+          // Cek apakah item sudah ada di list
+          bool isExists = packingListProvider.isDataExists(item.itemsId);
 
-          packingListProvider.addItemsData(dataItems);
-          MKIMethods.showMessage(
-            context,
-            Colors.green,
-            '${item.itemsName} ditambahkan',
-          );
+          if (isExists) {
+            // Jika sudah ada, tampilkan pesan error
+            MKIMethods.showMessage(
+              context,
+              Colors.redAccent,
+              '${item.itemsName} sudah ada dalam list',
+            );
+          } else {
+            // Jika belum ada, tambahkan item baru
+            ItemsCartData dataItems = ItemsCartData(
+              itemsId: item.itemsId,
+              itemsCode: item.itemsCode,
+              itemsName: item.itemsName,
+              itemsPrice: item.finalPrice.toString(),
+              qty: 1,
+              itemsIcon: item.imgPath,
+            );
+
+            packingListProvider.addItemsData(dataItems);
+            MKIMethods.showMessage(
+              context,
+              Colors.green,
+              '${item.itemsName} ditambahkan',
+            );
+          }
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,5 +503,12 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _searchController.dispose();
+    super.dispose();
   }
 }

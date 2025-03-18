@@ -4,6 +4,7 @@ import 'package:karposku/models/items_cart_data.dart';
 import 'package:karposku/providers/items_list_cart_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:karposku/screens/items_selection_screen.dart';
+import 'package:karposku/consts/mki_variabels.dart';
 
 class PackingScreen extends StatefulWidget {
   const PackingScreen({super.key});
@@ -167,8 +168,143 @@ class _PackingScreenState extends State<PackingScreen> {
       padding: EdgeInsets.all(20),
       itemCount: packingListProvider.itemList.length,
       itemBuilder: (context, index) {
-        // TODO: Implement list item widget
-        return Container();
+        var item = packingListProvider.itemList[index];
+        return Container(
+          margin: EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Gambar Produk
+              Container(
+                width: 100,
+                height: 100,
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: MKIColorConstv2.neutral200,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
+                ),
+                child: Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: item.itemsIcon != ''
+                            ? NetworkImage(item.itemsIcon)
+                            : AssetImage('assets/images/karbotech.png')
+                                as ImageProvider,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Informasi Produk
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.itemsName,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: MKIColorConstv2.secondaryDark,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Rp ${MKIVariabels.formatter.format(int.parse(item.itemsPrice))}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: MKIColorConstv2.secondary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Row(
+                        children: [
+                          // Tombol Kurangi
+                          IconButton(
+                            onPressed: () {
+                              if (item.qty > 1) {
+                                packingListProvider.decItemsQty(item);
+                              }
+                            },
+                            icon: Icon(
+                              Icons.remove_circle_outline,
+                              color: MKIColorConstv2.secondary,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: BoxConstraints(),
+                          ),
+                          // Quantity
+                          Container(
+                            margin: EdgeInsets.symmetric(horizontal: 12),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: MKIColorConstv2.secondarySoft,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${item.qty}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: MKIColorConstv2.secondary,
+                              ),
+                            ),
+                          ),
+                          // Tombol Tambah
+                          IconButton(
+                            onPressed: () {
+                              packingListProvider.incItemsQty(item);
+                            },
+                            icon: Icon(
+                              Icons.add_circle_outline,
+                              color: MKIColorConstv2.secondary,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: BoxConstraints(),
+                          ),
+                          Spacer(),
+                          // Tombol Hapus
+                          IconButton(
+                            onPressed: () {
+                              packingListProvider.removeItemData(item.itemsId);
+                            },
+                            icon: Icon(
+                              Icons.delete_outline,
+                              color: MKIColorConstv2.error,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
