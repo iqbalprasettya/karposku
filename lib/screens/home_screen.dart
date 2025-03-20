@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 // import 'package:flutter/widgets.dart';
-import 'package:karposku/consts/mki_colors.dart';
 import 'package:karposku/consts/mki_colorsv2.dart';
-import 'package:karposku/consts/mki_styles.dart';
 import 'package:karposku/consts/mki_urls.dart';
 import 'package:karposku/screens/about_screen.dart';
 import 'package:karposku/screens/navigation_screen.dart';
 import 'package:karposku/screens/printers/printer_list_screen.dart';
-import 'package:karposku/screens/cart_screen.dart';
-import 'package:karposku/screens/invoice_list_screen.dart';
-import 'package:karposku/screens/profile_screen.dart';
 import 'package:karposku/screens/packing_screen.dart';
 // import 'package:karposku/consts/mki_styles.dart';
 // import 'package:karposku/consts/mki_variabels.dart';

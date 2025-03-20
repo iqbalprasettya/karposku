@@ -40,9 +40,7 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen>
 
   void _handleTabSelection() {
     String selectedCategory = categories[_tabController.index];
-    setState(() {
-      filteredItems = categorizedItems[selectedCategory] ?? [];
-    });
+    _filterItems(_searchController.text, selectedCategory);
   }
 
   void _loadItemsAndCategories() async {
@@ -78,22 +76,32 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen>
     });
   }
 
-  void _filterItems(String query) {
+  void _filterItems(String query, [String? category]) {
     setState(() {
-      if (query.isEmpty) {
-        // Jika query kosong, kembalikan ke kategori yang sedang aktif
-        String currentCategory = categories[_tabController.index];
-        filteredItems = categorizedItems[currentCategory] ?? [];
-      } else {
-        // Filter dari kategori yang sedang aktif
-        String currentCategory = categories[_tabController.index];
-        List<ItemsData> categoryItems = categorizedItems[currentCategory] ?? [];
+      String currentCategory = category ?? categories[_tabController.index];
+      List<ItemsData> baseItems = categorizedItems[currentCategory] ?? [];
 
-        filteredItems = categoryItems
-            .where((item) =>
-                item.itemsName.toLowerCase().contains(query.toLowerCase()) ||
-                item.itemsCode.toLowerCase().contains(query.toLowerCase()))
-            .toList();
+      if (query.isEmpty) {
+        // Jika query kosong, tampilkan semua item untuk kategori yang aktif
+        filteredItems = baseItems;
+      } else {
+        // Filter berdasarkan query dengan pencocokan yang lebih fleksibel
+        String normalizedQuery = query.toLowerCase().trim();
+        filteredItems = baseItems.where((item) {
+          String normalizedName = item.itemsName.toLowerCase();
+          String normalizedCode = item.itemsCode.toLowerCase();
+
+          // Cek apakah query ada di nama atau kode barang
+          bool matchesName = normalizedName.contains(normalizedQuery);
+          bool matchesCode = normalizedCode.contains(normalizedQuery);
+
+          // Cek juga kata-kata individual dalam nama barang
+          bool matchesWords = normalizedName
+              .split(' ')
+              .any((word) => word.startsWith(normalizedQuery));
+
+          return matchesName || matchesCode || matchesWords;
+        }).toList();
       }
     });
   }
@@ -178,6 +186,7 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen>
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Container(
+                      height: 48,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
@@ -189,24 +198,31 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen>
                           ),
                         ],
                       ),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: _filterItems,
-                        decoration: InputDecoration(
-                          hintText: 'Cari nama atau kode barang...',
-                          prefixIcon: Icon(Icons.search,
-                              color: MKIColorConstv2.primary),
-                          suffixIcon: _searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: Icon(Icons.clear),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    _filterItems('');
-                                  },
-                                )
-                              : null,
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Center(
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (value) => _filterItems(value),
+                          textInputAction: TextInputAction.search,
+                          decoration: InputDecoration(
+                            hintText: 'Cari barang...',
+                            prefixIcon: Icon(Icons.search,
+                                color: MKIColorConstv2.primary),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(Icons.clear),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      _filterItems('');
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -235,20 +251,55 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen>
               child: TabBarView(
                 controller: _tabController,
                 children: categories.map((category) {
-                  final items = categorizedItems[category] ?? [];
-                  return GridView.builder(
-                    padding: EdgeInsets.all(16),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.72,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    itemCount: items.length,
-                    itemBuilder: (context, index) {
-                      return _buildItemCard(context, items[index]);
-                    },
-                  );
+                  // Filter items berdasarkan kategori yang aktif
+                  List<ItemsData> categoryItems = category == 'Semua'
+                      ? filteredItems
+                      : filteredItems.where((item) {
+                          var categoryData = categoryList.firstWhere(
+                            (cat) => cat.categoryName == category,
+                            orElse: () =>
+                                ItemsCategory(categoryId: '', categoryName: ''),
+                          );
+                          return item.itemsCategory == categoryData.categoryId;
+                        }).toList();
+
+                  return categoryItems.isEmpty &&
+                          _searchController.text.isNotEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.search_off,
+                                size: 48,
+                                color: MKIColorConstv2.neutral400,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'Barang tidak ditemukan',
+                                style: TextStyle(
+                                  color: MKIColorConstv2.neutral400,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : GridView.builder(
+                          padding: EdgeInsets.all(16),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 0.72,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
+                          itemCount: categoryItems.length,
+                          itemBuilder: (context, index) {
+                            return _buildItemCard(
+                                context, categoryItems[index]);
+                          },
+                        );
                 }).toList(),
               ),
             ),

@@ -9,6 +9,7 @@ import 'package:karposku/models/items_category.dart';
 import 'package:karposku/models/items_data.dart';
 import 'package:karposku/models/user_data.dart';
 import 'package:karposku/utilities/local_storage.dart';
+import 'package:karposku/models/items_cart_data.dart';
 
 class MKIUrls {
   // static const String baseUrl = 'https://sangati-server.herokuapp.com/mobile';
@@ -539,5 +540,70 @@ class MKIUrls {
       rs = 'failed';
     }
     return rs;
+  }
+
+  static Future<String> createTempPacking(
+    double total,
+    String customerName,
+    double price,
+    List<ItemsCartData> items,
+  ) async {
+    String token = await LocalStorage.load(MKIVariabels.token);
+    String status = 'Gagal akses ke server';
+    var headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json'
+    };
+
+    // Menyiapkan detail items
+    List<Map<String, dynamic>> details = items.map((item) {
+      double itemPrice = double.parse(item.itemsPrice);
+      return {
+        'items_id': item.itemsId,
+        'price': itemPrice,
+        'qty': item.qty,
+        'subtotal': itemPrice * item.qty,
+      };
+    }).toList();
+
+    // Menyiapkan body request
+    Map<String, dynamic> body = {
+      'total': total,
+      'customer_name': customerName,
+      'price': price,
+      'remarks': 'Pesanan dalam proses',
+      'detail': details,
+    };
+
+    // Perbaikan URL endpoint
+    final url = Uri.parse('$transUrl/invoice_temp');
+
+    try {
+      print('Request URL: $url');
+      print('Request Body: ${jsonEncode(body)}');
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      print('Response Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        var dataJson = jsonDecode(response.body);
+        status = dataJson['status'] ?? 'failed';
+        print('Parsed Status: $status');
+      } else {
+        status = 'failed';
+        print('Error Response: ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      print('Error creating temp packing: $e');
+      status = 'failed';
+    }
+
+    return status;
   }
 }
