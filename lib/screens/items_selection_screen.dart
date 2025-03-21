@@ -25,11 +25,10 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen>
   List<ItemsData> itemsList = [];
   List<ItemsData> filteredItems = [];
   late TabController _tabController;
-  List<String> categories = ['Semua']; // Mulai dengan Semua
+  List<String> categories = ['Semua'];
   List<ItemsCategory> categoryList = [];
-
-  // Tambahkan map untuk menyimpan items yang sudah difilter per kategori
   Map<String, List<ItemsData>> categorizedItems = {};
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -40,69 +39,65 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen>
 
   void _handleTabSelection() {
     String selectedCategory = categories[_tabController.index];
-    _filterItems(_searchController.text, selectedCategory);
+    setState(() {
+      filteredItems =
+          _getFilteredItems(_searchController.text, selectedCategory);
+    });
+  }
+
+  List<ItemsData> _getFilteredItems(String query, String category) {
+    List<ItemsData> baseItems = categorizedItems[category] ?? [];
+    if (query.isEmpty) return baseItems;
+
+    String normalizedQuery = query.toLowerCase().trim();
+    return baseItems.where((item) {
+      String normalizedName = item.itemsName.toLowerCase();
+      String normalizedCode = item.itemsCode.toLowerCase();
+      bool matchesName = normalizedName.contains(normalizedQuery);
+      bool matchesCode = normalizedCode.contains(normalizedQuery);
+      bool matchesWords = normalizedName
+          .split(' ')
+          .any((word) => word.startsWith(normalizedQuery));
+      return matchesName || matchesCode || matchesWords;
+    }).toList();
   }
 
   void _loadItemsAndCategories() async {
-    // Load kategori terlebih dahulu
-    categoryList = await MKIUrls.getItemsCategory();
+    setState(() => isLoading = true);
+    try {
+      final Future<List<ItemsCategory>> categoriesFuture =
+          MKIUrls.getItemsCategory();
+      final Future<List<ItemsData>> itemsFuture = MKIUrls.getItemsList();
 
-    // Load items
-    itemsList = await MKIUrls.getItemsList();
+      final results = await Future.wait([categoriesFuture, itemsFuture]);
+      categoryList = results[0] as List<ItemsCategory>;
+      itemsList = results[1] as List<ItemsData>;
 
-    // Pre-filter items berdasarkan kategori
-    setState(() {
-      // Inisialisasi kategori 'Semua' dengan semua items
       categorizedItems = {'Semua': itemsList};
-
-      // Filter items untuk setiap kategori
       for (var category in categoryList) {
         categorizedItems[category.categoryName] = itemsList
             .where((item) => item.itemsCategory == category.categoryId)
             .toList();
       }
 
-      // Set up categories list
-      categories = ['Semua'];
-      categories.addAll(categoryList.map((cat) => cat.categoryName));
-
-      // Set filtered items awal ke 'Semua'
-      filteredItems = itemsList;
-
-      // Reinisialisasi TabController
-      _tabController.dispose();
-      _tabController = TabController(length: categories.length, vsync: this);
-      _tabController.addListener(_handleTabSelection);
-    });
+      setState(() {
+        categories = ['Semua', ...categoryList.map((cat) => cat.categoryName)];
+        filteredItems = itemsList;
+        _tabController = TabController(length: categories.length, vsync: this);
+        _tabController.addListener(_handleTabSelection);
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
-  void _filterItems(String query, [String? category]) {
+  void _filterItems(String query) {
     setState(() {
-      String currentCategory = category ?? categories[_tabController.index];
-      List<ItemsData> baseItems = categorizedItems[currentCategory] ?? [];
-
-      if (query.isEmpty) {
-        // Jika query kosong, tampilkan semua item untuk kategori yang aktif
-        filteredItems = baseItems;
-      } else {
-        // Filter berdasarkan query dengan pencocokan yang lebih fleksibel
-        String normalizedQuery = query.toLowerCase().trim();
-        filteredItems = baseItems.where((item) {
-          String normalizedName = item.itemsName.toLowerCase();
-          String normalizedCode = item.itemsCode.toLowerCase();
-
-          // Cek apakah query ada di nama atau kode barang
-          bool matchesName = normalizedName.contains(normalizedQuery);
-          bool matchesCode = normalizedCode.contains(normalizedQuery);
-
-          // Cek juga kata-kata individual dalam nama barang
-          bool matchesWords = normalizedName
-              .split(' ')
-              .any((word) => word.startsWith(normalizedQuery));
-
-          return matchesName || matchesCode || matchesWords;
-        }).toList();
-      }
+      String currentCategory = categories[_tabController.index];
+      filteredItems = _getFilteredItems(query, currentCategory);
     });
   }
 
@@ -248,64 +243,71 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen>
 
             // Content Area with TabBarView
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: categories.map((category) {
-                  // Filter items berdasarkan kategori yang aktif
-                  List<ItemsData> categoryItems = category == 'Semua'
-                      ? filteredItems
-                      : filteredItems.where((item) {
-                          var categoryData = categoryList.firstWhere(
-                            (cat) => cat.categoryName == category,
-                            orElse: () =>
-                                ItemsCategory(categoryId: '', categoryName: ''),
-                          );
-                          return item.itemsCategory == categoryData.categoryId;
-                        }).toList();
+              child: isLoading
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: MKIColorConstv2.primary,
+                      ),
+                    )
+                  : TabBarView(
+                      controller: _tabController,
+                      children: categories.map((category) {
+                        List<ItemsData> categoryItems = category == 'Semua'
+                            ? filteredItems
+                            : categorizedItems[category] ?? [];
 
-                  return categoryItems.isEmpty &&
-                          _searchController.text.isNotEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.search_off,
-                                size: 48,
-                                color: MKIColorConstv2.neutral400,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'Barang tidak ditemukan',
-                                style: TextStyle(
-                                  color: MKIColorConstv2.neutral400,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : GridView.builder(
-                          padding: EdgeInsets.all(16),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 0.72,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
-                          itemCount: categoryItems.length,
-                          itemBuilder: (context, index) {
-                            return _buildItemCard(
-                                context, categoryItems[index]);
-                          },
-                        );
-                }).toList(),
-              ),
+                        if (_searchController.text.isNotEmpty) {
+                          categoryItems = _getFilteredItems(
+                              _searchController.text, category);
+                        }
+
+                        return categoryItems.isEmpty &&
+                                _searchController.text.isNotEmpty
+                            ? _buildEmptyState()
+                            : _buildGridView(categoryItems);
+                      }).toList(),
+                    ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 48,
+            color: MKIColorConstv2.neutral400,
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Barang tidak ditemukan',
+            style: TextStyle(
+              color: MKIColorConstv2.neutral400,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGridView(List<ItemsData> items) {
+    return GridView.builder(
+      padding: EdgeInsets.all(16),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.72,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) => _buildItemCard(context, items[index]),
     );
   }
 

@@ -22,351 +22,215 @@ class _PackingScreenState extends State<PackingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
-
     var packingListProvider =
         Provider.of<ItemsListCartProvider>(context, listen: true);
-
-    if (packingListProvider.itemList.isNotEmpty) {
-      isEmpty = false;
-    } else {
-      isEmpty = true;
-    }
+    isEmpty = packingListProvider.itemList.isEmpty;
 
     return Scaffold(
-      body: Container(
-        width: screenWidth,
-        height: screenHeight,
-        decoration: BoxDecoration(
-          color: MKIColorConstv2.neutral200,
-        ),
-        child: Column(
+      backgroundColor: MKIColorConstv2.neutral200,
+      body: SafeArea(
+        child: Stack(
           children: [
-            // Header section
-            Container(
-              padding: EdgeInsets.only(top: 50, bottom: 20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    MKIColorConstv2.secondaryDark,
-                    MKIColorConstv2.secondary.withOpacity(0.95),
-                  ],
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Packing',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: MKIColorConstv2.neutral100,
+            CustomScrollView(
+              slivers: [
+                // Header yang mirip dengan HomeScreen
+                SliverAppBar(
+                  expandedHeight: 140,
+                  floating: false,
+                  pinned: true,
+                  backgroundColor: Colors.transparent,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            MKIColorConstv2.secondaryDark,
+                            MKIColorConstv2.secondary.withOpacity(0.95),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(30),
+                          bottomRight: Radius.circular(30),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(20, 20, 20, 20),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Packing List',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: MKIColorConstv2.neutral100,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      isEmpty ? 'Belum ada item' : '${packingListProvider.itemList.length} items',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: MKIColorConstv2.neutral300,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    _buildHeaderButton(
+                                      icon: Icons.add_circle_outline,
+                                      onPressed: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => const ItemsSelectionScreen()),
+                                      ),
+                                    ),
+                                    if (!isEmpty) ...[
+                                      SizedBox(width: 8),
+                                      _buildHeaderButton(
+                                        icon: Icons.delete_outline,
+                                        onPressed: () => _showClearListDialog(context, packingListProvider),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    Row(
-                      children: [
-                        // Add Item Button
-                        IconButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const ItemsSelectionScreen(),
-                              ),
-                            );
-                          },
-                          icon: Icon(
-                            Icons.add_circle_outline,
-                            color: MKIColorConstv2.neutral100,
-                            size: 28,
-                          ),
-                        ),
-                        // Submit Button
-                        IconButton(
-                          onPressed: () {
-                            if (!isEmpty) {
-                              _showSubmitDialog(context, packingListProvider);
-                            }
-                          },
-                          icon: Icon(
-                            Icons.check_circle_outline,
-                            color: MKIColorConstv2.neutral100,
-                            size: 28,
-                          ),
-                        ),
-                        // Clear List Button
-                        IconButton(
-                          onPressed: () {
-                            if (!isEmpty) {
-                              _showClearListDialog(
-                                  context, packingListProvider);
-                            }
-                          },
-                          icon: Icon(
-                            Icons.delete_outline,
-                            color: MKIColorConstv2.neutral100,
-                            size: 28,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
+
+                // Content
+                SliverToBoxAdapter(
+                  child: isEmpty
+                      ? _buildEmptyState()
+                      : Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Text(
+                            'Daftar Item',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: MKIColorConstv2.secondaryDark,
+                            ),
+                          ),
+                        ),
+                ),
+
+                if (!isEmpty)
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _buildModernItemCard(
+                          context,
+                          packingListProvider.itemList[index],
+                          packingListProvider,
+                        ),
+                        childCount: packingListProvider.itemList.length,
+                      ),
+                    ),
+                  ),
+
+                SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+              ],
+            ),
+
+            if (!isEmpty)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: _buildFloatingPanel(packingListProvider),
               ),
-            ),
-
-            // Content Area
-            Expanded(
-              child: isEmpty
-                  ? _buildEmptyList()
-                  : _buildPackingList(packingListProvider),
-            ),
-
-            // Total Items
-            if (!isEmpty) _buildTotalItems(packingListProvider),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildEmptyList() {
-    return Center(
+  Widget _buildHeaderButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon, color: Colors.white),
+        padding: EdgeInsets.all(12),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      padding: EdgeInsets.all(40),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.inventory_2_outlined,
-            size: 80,
-            color: MKIColorConstv2.neutral400,
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Belum ada data packing',
-            style: TextStyle(
-              fontSize: 20,
-              color: MKIColorConstv2.neutral500,
-              fontWeight: FontWeight.w500,
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: MKIColorConstv2.secondarySoft,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.inventory_2_outlined,
+              size: 60,
+              color: MKIColorConstv2.secondary,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPackingList(ItemsListCartProvider packingListProvider) {
-    return ListView.builder(
-      padding: EdgeInsets.all(20),
-      itemCount: packingListProvider.itemList.length,
-      itemBuilder: (context, index) {
-        var item = packingListProvider.itemList[index];
-        return Container(
-          margin: EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: Offset(0, 2),
-              ),
-            ],
+          SizedBox(height: 24),
+          Text(
+            'Belum Ada Item',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: MKIColorConstv2.secondaryDark,
+            ),
           ),
-          child: Row(
-            children: [
-              // Gambar Produk
-              Container(
-                width: 100,
-                height: 100,
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: MKIColorConstv2.neutral200,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
-                  ),
-                ),
-                child: Center(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: item.itemsIcon != ''
-                            ? NetworkImage(item.itemsIcon)
-                            : AssetImage('assets/images/karbotech.png')
-                                as ImageProvider,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              // Informasi Produk
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.itemsName,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: MKIColorConstv2.secondaryDark,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Rp ${MKIVariabels.formatter.format(int.parse(item.itemsPrice))}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: MKIColorConstv2.secondary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Row(
-                        children: [
-                          // Tombol Kurangi
-                          IconButton(
-                            onPressed: () {
-                              if (item.qty > 1) {
-                                packingListProvider.decItemsQty(item);
-                              }
-                            },
-                            icon: Icon(
-                              Icons.remove_circle_outline,
-                              color: MKIColorConstv2.secondary,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: BoxConstraints(),
-                          ),
-                          // Quantity
-                          Container(
-                            margin: EdgeInsets.symmetric(horizontal: 12),
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: MKIColorConstv2.secondarySoft,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              '${item.qty}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: MKIColorConstv2.secondary,
-                              ),
-                            ),
-                          ),
-                          // Tombol Tambah
-                          IconButton(
-                            onPressed: () {
-                              packingListProvider.incItemsQty(item);
-                            },
-                            icon: Icon(
-                              Icons.add_circle_outline,
-                              color: MKIColorConstv2.secondary,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: BoxConstraints(),
-                          ),
-                          Spacer(),
-                          // Tombol Hapus
-                          IconButton(
-                            onPressed: () {
-                              packingListProvider.removeItemData(item.itemsId);
-                            },
-                            icon: Icon(
-                              Icons.delete_outline,
-                              color: MKIColorConstv2.error,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: BoxConstraints(),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+          SizedBox(height: 8),
+          Text(
+            'Mulai tambahkan item ke daftar packing',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: MKIColorConstv2.neutral500,
+            ),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildTotalItems(ItemsListCartProvider packingListProvider) {
-    return Container(
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Total Item',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: MKIColorConstv2.neutral500,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                '${packingListProvider.itemList.length} items',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: MKIColorConstv2.secondary,
-                ),
-              ),
-            ],
-          ),
-          ElevatedButton(
+          SizedBox(height: 32),
+          ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: MKIColorConstv2.secondary,
-              padding: EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            onPressed: () {
-              if (!isEmpty) {
-                _showSubmitDialog(context, packingListProvider);
-              }
-            },
-            child: Text(
-              'Submit Packing',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ItemsSelectionScreen()),
+            ),
+            icon: Icon(Icons.add_shopping_cart, color: Colors.white),
+            label: Text(
+              'Tambah Item',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -375,6 +239,221 @@ class _PackingScreenState extends State<PackingScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildModernItemCard(
+    BuildContext context,
+    ItemsCartData item,
+    ItemsListCartProvider provider,
+  ) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Image container with gradient overlay
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        MKIColorConstv2.primaryLight.withOpacity(0.1),
+                        MKIColorConstv2.primary.withOpacity(0.05),
+                      ],
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image(
+                      image: item.itemsIcon != ''
+                          ? NetworkImage(item.itemsIcon)
+                          : AssetImage('assets/images/karbotech.png')
+                              as ImageProvider,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.itemsName,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: MKIColorConstv2.secondaryDark,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Rp ${MKIVariabels.formatter.format(int.parse(item.itemsPrice))}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: MKIColorConstv2.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      // Quantity controls
+                      Container(
+                        decoration: BoxDecoration(
+                          color: MKIColorConstv2.neutral100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildQuantityButton(
+                              icon: Icons.remove,
+                              onPressed: () {
+                                if (item.qty > 1) provider.decItemsQty(item);
+                              },
+                            ),
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                '${item.qty}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            _buildQuantityButton(
+                              icon: Icons.add,
+                              onPressed: () => provider.incItemsQty(item),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Delete button
+          Positioned(
+            top: 8,
+            right: 8,
+            child: IconButton(
+              onPressed: () => provider.removeItemData(item.itemsId),
+              icon: Icon(
+                Icons.close,
+                size: 20,
+                color: MKIColorConstv2.neutral400,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuantityButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: EdgeInsets.all(8),
+          child: Icon(
+            icon,
+            size: 20,
+            color: MKIColorConstv2.secondary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFloatingPanel(ItemsListCartProvider provider) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total',
+                    style: TextStyle(
+                      color: MKIColorConstv2.neutral500,
+                      fontSize: 14,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Rp ${MKIVariabels.formatter.format(provider.total)}',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: MKIColorConstv2.secondaryDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MKIColorConstv2.primary,
+                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              onPressed: () => _showSubmitDialog(context, provider),
+              child: Text(
+                'Proses Packing',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
