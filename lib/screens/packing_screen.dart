@@ -28,136 +28,138 @@ class _PackingScreenState extends State<PackingScreen> {
 
     return Scaffold(
       backgroundColor: MKIColorConstv2.neutral200,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            CustomScrollView(
-              slivers: [
-                // Header yang mirip dengan HomeScreen
-                SliverAppBar(
-                  expandedHeight: 140,
-                  floating: false,
-                  pinned: true,
-                  backgroundColor: Colors.transparent,
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            MKIColorConstv2.secondaryDark,
-                            MKIColorConstv2.secondary.withOpacity(0.95),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(30),
-                          bottomRight: Radius.circular(30),
-                        ),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(20, 20, 20, 20),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Packing List',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: MKIColorConstv2.neutral100,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      isEmpty ? 'Belum ada item' : '${packingListProvider.itemList.length} items',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: MKIColorConstv2.neutral300,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Row(
-                                  children: [
-                                    _buildHeaderButton(
-                                      icon: Icons.add_circle_outline,
-                                      onPressed: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (context) => const ItemsSelectionScreen()),
-                                      ),
-                                    ),
-                                    if (!isEmpty) ...[
-                                      SizedBox(width: 8),
-                                      _buildHeaderButton(
-                                        icon: Icons.delete_outline,
-                                        onPressed: () => _showClearListDialog(context, packingListProvider),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Content
-                SliverToBoxAdapter(
-                  child: isEmpty
-                      ? _buildEmptyState()
-                      : Padding(
-                          padding: EdgeInsets.all(20),
-                          child: Text(
-                            'Daftar Item',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: MKIColorConstv2.secondaryDark,
-                            ),
+      extendBodyBehindAppBar: true,
+      body: Column(
+        children: [
+          // Header Fixed
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  MKIColorConstv2.secondaryDark,
+                  MKIColorConstv2.secondary.withOpacity(0.95),
+                ],
+              ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(20, 10, 20, 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Packing List',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: MKIColorConstv2.neutral100,
                           ),
                         ),
-                ),
-
-                if (!isEmpty)
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) => _buildModernItemCard(
-                          context,
-                          packingListProvider.itemList[index],
-                          packingListProvider,
+                        SizedBox(height: 2),
+                        Text(
+                          isEmpty
+                              ? 'Belum ada item'
+                              : '${packingListProvider.itemList.length} items',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: MKIColorConstv2.neutral300,
+                          ),
                         ),
-                        childCount: packingListProvider.itemList.length,
-                      ),
+                      ],
                     ),
-                  ),
+                    Row(
+                      children: [
+                        _buildHeaderButton(
+                          icon: Icons.add_circle_outline,
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const ItemsSelectionScreen()),
+                          ),
+                        ),
+                        if (!isEmpty) ...[
+                          SizedBox(width: 8),
+                          _buildHeaderButton(
+                            icon: Icons.delete_outline,
+                            onPressed: () => _showClearListDialog(
+                                context, packingListProvider),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
 
-                SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+          // Scrollable Content
+          Expanded(
+            child: Stack(
+              children: [
+                CustomScrollView(
+                  slivers: [
+                    // Content
+                    SliverToBoxAdapter(
+                      child: isEmpty
+                          ? _buildEmptyState()
+                          : Padding(
+                              padding: EdgeInsets.all(20),
+                              child: Text(
+                                'Daftar Item',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: MKIColorConstv2.secondaryDark,
+                                ),
+                              ),
+                            ),
+                    ),
+
+                    if (!isEmpty)
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) => _buildModernItemCard(
+                              context,
+                              packingListProvider.itemList[index],
+                              packingListProvider,
+                            ),
+                            childCount: packingListProvider.itemList.length,
+                          ),
+                        ),
+                      ),
+
+                    SliverPadding(
+                      padding: EdgeInsets.only(bottom: 140),
+                    ),
+                  ],
+                ),
+                if (!isEmpty)
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: _buildFloatingPanel(packingListProvider),
+                  ),
               ],
             ),
-
-            if (!isEmpty)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: _buildFloatingPanel(packingListProvider),
-              ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -170,6 +172,9 @@ class _PackingScreenState extends State<PackingScreen> {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+        ),
       ),
       child: IconButton(
         onPressed: onPressed,
@@ -226,7 +231,8 @@ class _PackingScreenState extends State<PackingScreen> {
             ),
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ItemsSelectionScreen()),
+              MaterialPageRoute(
+                  builder: (context) => const ItemsSelectionScreen()),
             ),
             icon: Icon(Icons.add_shopping_cart, color: Colors.white),
             label: Text(
@@ -249,30 +255,29 @@ class _PackingScreenState extends State<PackingScreen> {
     ItemsListCartProvider provider,
   ) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      margin: EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: Offset(0, 4),
+            blurRadius: 4,
+            offset: Offset(0, 2),
           ),
         ],
       ),
       child: Stack(
         children: [
           Padding(
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.all(12),
             child: Row(
               children: [
-                // Image container with gradient overlay
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: 60,
+                  height: 60,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(8),
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -283,7 +288,7 @@ class _PackingScreenState extends State<PackingScreen> {
                     ),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(8),
                     child: Image(
                       image: item.itemsIcon != ''
                           ? NetworkImage(item.itemsIcon)
@@ -293,78 +298,94 @@ class _PackingScreenState extends State<PackingScreen> {
                     ),
                   ),
                 ),
-                SizedBox(width: 16),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         item.itemsName,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: MKIColorConstv2.secondaryDark,
                         ),
                       ),
-                      SizedBox(height: 8),
+                      SizedBox(height: 4),
                       Text(
                         'Rp ${MKIVariabels.formatter.format(int.parse(item.itemsPrice))}',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           color: MKIColorConstv2.primary,
                           fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(height: 12),
-                      // Quantity controls
-                      Container(
-                        decoration: BoxDecoration(
-                          color: MKIColorConstv2.neutral100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildQuantityButton(
-                              icon: Icons.remove,
-                              onPressed: () {
-                                if (item.qty > 1) provider.decItemsQty(item);
-                              },
-                            ),
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(
-                                '${item.qty}',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            _buildQuantityButton(
-                              icon: Icons.add,
-                              onPressed: () => provider.incItemsQty(item),
-                            ),
-                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: MKIColorConstv2.secondarySoft.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: MKIColorConstv2.secondary.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildQuantityButton(
+                        icon: Icons.remove,
+                        onPressed: () {
+                          if (item.qty > 1) provider.decItemsQty(item);
+                        },
+                        size: 20,
+                        backgroundColor:
+                            MKIColorConstv2.secondary.withOpacity(0.1),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '${item.qty}',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: MKIColorConstv2.secondaryDark,
+                          ),
+                        ),
+                      ),
+                      _buildQuantityButton(
+                        icon: Icons.add,
+                        onPressed: () => provider.incItemsQty(item),
+                        size: 20,
+                        backgroundColor:
+                            MKIColorConstv2.secondary.withOpacity(0.1),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  margin: EdgeInsets.only(left: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    onPressed: () => provider.removeItemData(item.itemsId),
+                    icon: Icon(
+                      Icons.close,
+                      size: 20,
+                      color: Colors.red,
+                    ),
+                    padding: EdgeInsets.all(8),
+                    constraints: BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                  ),
+                ),
               ],
-            ),
-          ),
-          // Delete button
-          Positioned(
-            top: 8,
-            right: 8,
-            child: IconButton(
-              onPressed: () => provider.removeItemData(item.itemsId),
-              icon: Icon(
-                Icons.close,
-                size: 20,
-                color: MKIColorConstv2.neutral400,
-              ),
             ),
           ),
         ],
@@ -375,17 +396,24 @@ class _PackingScreenState extends State<PackingScreen> {
   Widget _buildQuantityButton({
     required IconData icon,
     required VoidCallback onPressed,
+    double size = 20,
+    Color? backgroundColor,
   }) {
     return Material(
-      color: Colors.transparent,
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: EdgeInsets.all(8),
+          constraints: BoxConstraints(
+            minWidth: 36,
+            minHeight: 36,
+          ),
           child: Icon(
             icon,
-            size: 20,
+            size: size,
             color: MKIColorConstv2.secondary,
           ),
         ),
@@ -395,15 +423,15 @@ class _PackingScreenState extends State<PackingScreen> {
 
   Widget _buildFloatingPanel(ItemsListCartProvider provider) {
     return Container(
-      padding: EdgeInsets.all(20),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, -5),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: Offset(0, -2),
           ),
         ],
       ),
@@ -411,25 +439,41 @@ class _PackingScreenState extends State<PackingScreen> {
         child: Row(
           children: [
             Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(
-                    'Total',
-                    style: TextStyle(
-                      color: MKIColorConstv2.neutral500,
-                      fontSize: 14,
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: MKIColorConstv2.secondarySoft.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.shopping_bag_outlined,
+                      color: MKIColorConstv2.secondary,
+                      size: 24,
                     ),
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Rp ${MKIVariabels.formatter.format(provider.total)}',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: MKIColorConstv2.secondaryDark,
-                    ),
+                  SizedBox(width: 12),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Total Pembayaran',
+                        style: TextStyle(
+                          color: MKIColorConstv2.neutral500,
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        'Rp ${MKIVariabels.formatter.format(provider.total)}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: MKIColorConstv2.secondaryDark,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -437,19 +481,31 @@ class _PackingScreenState extends State<PackingScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: MKIColorConstv2.primary,
-                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                elevation: 0,
               ),
               onPressed: () => _showSubmitDialog(context, provider),
-              child: Text(
-                'Proses Packing',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Proses',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                ],
               ),
             ),
           ],

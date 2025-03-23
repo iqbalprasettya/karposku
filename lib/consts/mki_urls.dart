@@ -606,4 +606,28 @@ class MKIUrls {
 
     return status;
   }
+
+  static Future<Map<String, dynamic>?> getInvoicePacking() async {
+    String token = await LocalStorage.load(MKIVariabels.token);
+    var headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json'
+    };
+
+    final url = Uri.parse('$transUrl/invoice_temp');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
 }

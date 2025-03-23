@@ -6,6 +6,7 @@ import 'package:karposku/screens/about_screen.dart';
 import 'package:karposku/screens/navigation_screen.dart';
 import 'package:karposku/screens/printers/printer_list_screen.dart';
 import 'package:karposku/screens/packing_screen.dart';
+import 'package:karposku/screens/invoice_packing_screen.dart';
 // import 'package:karposku/consts/mki_styles.dart';
 // import 'package:karposku/consts/mki_variabels.dart';
 
@@ -232,13 +233,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           MaterialPageRoute(
                               builder: (context) => const PrinterListScreen()));
                     }, iconColor: MKIColorConstv2.secondary),
-                    _buildMenuItem('Keranjang', Icons.shopping_cart_rounded,
-                        () {
-                      NavigationScreen.startIndex = 2;
-                      Navigator.pushReplacement(
+                    _buildMenuItem('Invoice', Icons.receipt_long_rounded, () {
+                      Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const NavigationScreen()));
+                              builder: (context) =>
+                                  const InvoicePackingScreen()));
                     }, iconColor: MKIColorConstv2.secondary),
                     _buildMenuItem('Items', Icons.list_alt_rounded, () {
                       NavigationScreen.startIndex = 1;
