@@ -7,6 +7,9 @@ import 'package:karposku/screens/navigation_screen.dart';
 import 'package:karposku/screens/printers/printer_list_screen.dart';
 import 'package:karposku/screens/packing_screen.dart';
 import 'package:karposku/screens/invoice_packing_screen.dart';
+import 'package:karposku/screens/items_list_screen.dart';
+import 'package:karposku/screens/sales_screen.dart';
+import 'package:karposku/screens/profile_screen.dart';
 // import 'package:karposku/consts/mki_styles.dart';
 // import 'package:karposku/consts/mki_variabels.dart';
 
@@ -21,6 +24,101 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String profilePath = '';
+  Map<String, dynamic> menuData = {
+    'status': 'success',
+    'message': 'berhasil mendapatkan data menu',
+    'data': []
+  };
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    setImgPath();
+    _loadMenuData();
+  }
+
+  Future<void> _loadMenuData() async {
+    try {
+      final response = await MKIUrls.getTopBar();
+      if (response['status'] == 'success') {
+        setState(() {
+          menuData = response;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error mengambil data menu: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  // Tambahkan fungsi untuk mendapatkan IconData berdasarkan nama icon
+  IconData _getMenuIcon(String iconName) {
+    switch (iconName) {
+      case 'inventory_2_rounded':
+        return Icons.inventory_2_rounded;
+      case 'print_outlined':
+        return Icons.print_outlined;
+      case 'receipt_long_rounded':
+        return Icons.receipt_long_rounded;
+      case 'list_alt_rounded':
+        return Icons.list_alt_rounded;
+      case 'analytics_rounded':
+        return Icons.analytics_rounded;
+      case 'person_rounded':
+        return Icons.person_rounded;
+      case 'info_rounded':
+        return Icons.info_rounded;
+      case 'grid_view_rounded':
+        return Icons.grid_view_rounded;
+      default:
+        return Icons.error_outline;
+    }
+  }
+
+  // Fungsi untuk handle navigasi berdasarkan route
+  void _handleNavigation(String route) {
+    switch (route) {
+      case 'packing':
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => const PackingScreen()));
+        break;
+      case 'printer-list':
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => const PrinterListScreen()));
+        break;
+      case 'invoice-packing':
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => const InvoicePackingScreen()));
+        break;
+      case 'items':
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => const ItemListScreen()));
+        break;
+      case 'report':
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => const SalesScreen(title: 'Laporan')));
+        break;
+      case 'profile':
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => const ProfileScreen()));
+        break;
+      case 'about':
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => const LogoAboutScreen()));
+        break;
+      case 'others':
+        _showComingSoonDialog();
+        break;
+    }
+  }
 
   Future<void> setImgPath() async {
     try {
@@ -37,13 +135,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    setImgPath();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
@@ -220,57 +320,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisCount: 4,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
-                  children: [
-                    _buildMenuItem('Packing', Icons.inventory_2_rounded, () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const PackingScreen()));
-                    }, iconColor: MKIColorConstv2.secondary),
-                    _buildMenuItem('Printer', Icons.print_outlined, () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const PrinterListScreen()));
-                    }, iconColor: MKIColorConstv2.secondary),
-                    _buildMenuItem('Invoice', Icons.receipt_long_rounded, () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  const InvoicePackingScreen()));
-                    }, iconColor: MKIColorConstv2.secondary),
-                    _buildMenuItem('Items', Icons.list_alt_rounded, () {
-                      NavigationScreen.startIndex = 1;
-                      Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const NavigationScreen()));
-                    }, iconColor: MKIColorConstv2.secondary),
-                    _buildMenuItem('Laporan', Icons.analytics_rounded, () {
-                      NavigationScreen.startIndex = 3;
-                      Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const NavigationScreen()));
-                    }, iconColor: MKIColorConstv2.secondary),
-                    _buildMenuItem('Profile', Icons.person_rounded, () {
-                      NavigationScreen.startIndex = 4;
-                      Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const NavigationScreen()));
-                    }, iconColor: MKIColorConstv2.secondary),
-                    _buildMenuItem('About', Icons.info_rounded, () {
-                      Navigator.push(
-                          context, // Untuk About tetap push biasa karena bukan bagian dari bottom nav
-                          MaterialPageRoute(
-                              builder: (context) => const LogoAboutScreen()));
-                    }, iconColor: MKIColorConstv2.secondary),
-                    _buildMenuItem('Lainnya', Icons.grid_view_rounded, () {
-                      _showComingSoonDialog();
-                    }, iconColor: MKIColorConstv2.secondary),
-                  ],
+                  children: (menuData['data'] as List).map((menuItem) {
+                    return _buildMenuItem(
+                      menuItem['title'],
+                      _getMenuIcon(menuItem['icon_name']),
+                      () => _handleNavigation(menuItem['route']),
+                      iconColor: MKIColorConstv2.secondary,
+                    );
+                  }).toList(),
                 ),
               ),
 

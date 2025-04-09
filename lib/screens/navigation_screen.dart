@@ -7,6 +7,8 @@ import 'package:karposku/screens/items_list_screen.dart';
 import 'package:karposku/screens/profile_screen.dart';
 import 'package:karposku/screens/sales_screen.dart';
 import 'package:karposku/screens/packing_screen.dart';
+import 'package:karposku/consts/mki_urls.dart';
+import 'package:karposku/screens/invoice_packing_screen.dart';
 
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({
@@ -22,72 +24,38 @@ class NavigationScreen extends StatefulWidget {
 
 class _NavigationScreenState extends State<NavigationScreen> {
   late int _selectedIndex;
-
-  // Data JSON statis untuk navigation (contoh response dari API)
-  final Map<String, dynamic> navigationData = {
-    "items": [
-      {
-        "id": 1,
-        "title": "Home",
-        "icon_name": "home",
-        "route": "home",
-        "order": 0,
-        "is_active": true,
-        "is_floating": false
-      },
-      {
-        "id": 2,
-        "title": "Items",
-        "icon_name": "list",
-        "route": "items",
-        "order": 1,
-        "is_active": true,
-        "is_floating": false
-      },
-      {
-        "id": 3,
-        "title": "Packing",
-        "icon_name": "inventory_2",
-        "route": "packing",
-        "order": 2,
-        "is_active": true,
-        "is_floating": true
-      },
-      {
-        "id": 4,
-        "title": "Cart",
-        "icon_name": "shopping_cart",
-        "route": "cart",
-        "order": 3,
-        "is_active": false,
-        "is_floating": false
-      },
-      {
-        "id": 5,
-        "title": "Sales",
-        "icon_name": "analytics",
-        "route": "sales",
-        "order": 4,
-        "is_active": true,
-        "is_floating": false
-      },
-      {
-        "id": 6,
-        "title": "Profile",
-        "icon_name": "person",
-        "route": "profile",
-        "order": 5,
-        "is_active": true,
-        "is_floating": false
-      }
-    ]
+  Map<String, dynamic> navigationData = {
+    'data': [] // Inisialisasi kosong
   };
+  bool isLoading = true;
 
-  // Modifikasi _tabs untuk menyesuaikan dengan data navigasi
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = NavigationScreen.startIndex;
+    _loadNavigation();
+  }
+
+  Future<void> _loadNavigation() async {
+    try {
+      final response = await MKIUrls.getNavigation();
+      if (response['status'] == 'success') {
+        setState(() {
+          navigationData = {'items': response['data']};
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error mengambil data navigasi: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  // Modifikasi _tabs untuk menggunakan data dari API
   List<Widget> get _tabs {
-    final activeItems = (navigationData['items'] as List)
-        .where((item) => item['is_active'] == true)
-        .toList();
+    final activeItems = (navigationData['items'] as List? ?? []);
 
     return activeItems.map((item) {
       switch (item['route']) {
@@ -103,6 +71,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
           return const SalesScreen(title: 'Sales');
         case 'profile':
           return const ProfileScreen();
+        case 'invoice-packing':
+          return const InvoicePackingScreen();
         default:
           return const SizedBox();
       }
@@ -123,37 +93,31 @@ class _NavigationScreenState extends State<NavigationScreen> {
         return filled ? Icons.analytics : Icons.analytics_outlined;
       case 'person':
         return filled ? Icons.person : Icons.person_outline;
+      case 'receipt_long':
+        return filled ? Icons.receipt_long : Icons.receipt_long_outlined;
       default:
         return filled ? Icons.circle : Icons.circle_outlined;
     }
   }
 
   int get _floatingIndex {
-    final activeItems = (navigationData['items'] as List)
-        .where((item) => item['is_active'] == true)
-        .toList();
-    return activeItems.indexWhere((item) => item['is_floating'] == true);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedIndex = NavigationScreen.startIndex;
+    final activeItems = (navigationData['items'] as List? ?? []);
+    return activeItems.indexWhere((item) => item['is_floating'] == 1);
   }
 
   List<BottomNavigationBarItem> _buildNavigationItems() {
-    final activeItems = (navigationData['items'] as List)
-        .where((item) => item['is_active'] == true)
-        .toList();
+    final activeItems = (navigationData['items'] as List? ?? []);
 
     return activeItems.map((item) {
       final index = activeItems.indexOf(item);
+      final isFloating = _floatingIndex >= 0 && _floatingIndex == index;
+
       return BottomNavigationBarItem(
-        icon: _floatingIndex == index
-            ? SizedBox(height: 24)
+        icon: isFloating
+            ? const SizedBox(height: 24)
             : Icon(_getIcon(item['icon_name'], false)),
-        activeIcon: _floatingIndex == index
-            ? SizedBox(height: 24)
+        activeIcon: isFloating
+            ? const SizedBox(height: 24)
             : Icon(_getIcon(item['icon_name'], true)),
         label: item['title'],
       );
@@ -163,55 +127,63 @@ class _NavigationScreenState extends State<NavigationScreen> {
   Widget? _buildFloatingButton() {
     if (_floatingIndex < 0) return null;
 
-    // Ambil daftar item yang aktif dulu
-    final activeItems = (navigationData['items'] as List)
-        .where((item) => item['is_active'] == true)
-        .toList();
+    final activeItems = (navigationData['items'] as List? ?? []);
+    if (activeItems.isEmpty) return null;
 
-    // Gunakan activeItems untuk mendapatkan floating item
-    final floatingItem = activeItems[_floatingIndex];
+    try {
+      final floatingItem = activeItems[_floatingIndex];
 
-    // Hitung posisi horizontal berdasarkan index
-    final screenWidth = MediaQuery.of(context).size.width;
-    final itemWidth =
-        screenWidth / activeItems.length; // Sesuaikan dengan jumlah item aktif
-    final centerPosition = (_floatingIndex * itemWidth) + (itemWidth / 2);
+      // Hitung posisi horizontal berdasarkan index
+      final screenWidth = MediaQuery.of(context).size.width;
+      final itemWidth = screenWidth / activeItems.length;
+      final centerPosition = (_floatingIndex * itemWidth) + (itemWidth / 2);
 
-    return Positioned(
-      left: centerPosition - 30,
-      top: -25,
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedIndex = _floatingIndex),
-        child: Container(
-          height: 60,
-          width: 60,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: MKIColorConstv2.primary,
-            boxShadow: [
-              BoxShadow(
-                color: MKIColorConstv2.primary.withOpacity(0.3),
-                spreadRadius: 2,
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Icon(
-            _getIcon(
-              floatingItem['icon_name'],
-              _selectedIndex == _floatingIndex,
+      return Positioned(
+        left: centerPosition - 30,
+        top: -25,
+        child: GestureDetector(
+          onTap: () => setState(() => _selectedIndex = _floatingIndex),
+          child: Container(
+            height: 60,
+            width: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: MKIColorConstv2.primary,
+              boxShadow: [
+                BoxShadow(
+                  color: MKIColorConstv2.primary.withOpacity(0.3),
+                  spreadRadius: 2,
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            size: 32,
-            color: Colors.white,
+            child: Icon(
+              _getIcon(
+                floatingItem['icon_name'],
+                _selectedIndex == _floatingIndex,
+              ),
+              size: 32,
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       body: _tabs[_selectedIndex],
       bottomNavigationBar: Stack(
@@ -251,7 +223,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
               ),
             ),
           ),
-          _buildFloatingButton()!,
+          if (_floatingIndex >= 0) _buildFloatingButton() ?? const SizedBox(),
         ],
       ),
     );

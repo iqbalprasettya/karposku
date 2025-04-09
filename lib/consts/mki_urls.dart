@@ -10,6 +10,7 @@ import 'package:karposku/models/items_data.dart';
 import 'package:karposku/models/user_data.dart';
 import 'package:karposku/utilities/local_storage.dart';
 import 'package:karposku/models/items_cart_data.dart';
+import 'package:flutter/material.dart';
 
 class MKIUrls {
   // static const String baseUrl = 'https://sangati-server.herokuapp.com/mobile';
@@ -628,6 +629,68 @@ class MKIUrls {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>> getNavigation() async {
+    String token = await LocalStorage.load(MKIVariabels.token);
+    var headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    final url = Uri.parse('$transUrl/navigation/nav_bar');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {
+        'status': 'failed',
+        'message': 'Gagal mengambil data navigasi',
+        'data': []
+      };
+    } catch (e) {
+      return {
+        'status': 'failed',
+        'message': 'Terjadi kesalahan: $e',
+        'data': []
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getTopBar() async {
+    String token = await LocalStorage.load(MKIVariabels.token);
+    var headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    final url = Uri.parse('$transUrl/navigation/top_bar');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {
+        'status': 'failed',
+        'message': 'Gagal mengambil data top bar',
+        'data': []
+      };
+    } catch (e) {
+      return {
+        'status': 'failed',
+        'message': 'Terjadi kesalahan: $e',
+        'data': []
+      };
     }
   }
 }
