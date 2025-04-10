@@ -127,9 +127,39 @@ class BluetoothPrint {
     bool connected = await PrintBluetoothThermal.connectionStatus;
     if (connected) {
       List<int> bytes = [];
-      bytes += await _textToBytes("=========================\n");
-      bytes += await _textToBytes("PRINT TEST\n");
-      bytes += await _textToBytes("=========================\n\n");
+
+      // Header
+      bytes += await _textToBytes("================================\n");
+      bytes += await _textToBytes("          KARPOSKU TEST         \n");
+      bytes += await _textToBytes("================================\n\n");
+
+      // Info Toko
+      bytes += await _textToBytes("Nama Toko: Toko Demo\n");
+      bytes += await _textToBytes("Alamat: Jl. Demo No. 123\n");
+      bytes += await _textToBytes("Telp: 081234567890\n\n");
+
+      // Tanggal & Waktu
+      bytes += await _textToBytes(
+          "Tanggal: ${DateTime.now().toString().substring(0, 10)}\n");
+      bytes += await _textToBytes(
+          "Waktu: ${DateTime.now().toString().substring(11, 19)}\n\n");
+
+      // Detail Transaksi
+      bytes += await _textToBytes("--------------------------------\n");
+      bytes += await _textToBytes("DETAIL TRANSAKSI\n");
+      bytes += await _textToBytes("--------------------------------\n");
+      bytes += await _textToBytes("Produk 1           Rp 10.000\n");
+      bytes += await _textToBytes("Produk 2           Rp 15.000\n");
+      bytes += await _textToBytes("Produk 3           Rp 20.000\n");
+      bytes += await _textToBytes("--------------------------------\n");
+      bytes += await _textToBytes("Total              Rp 45.000\n\n");
+
+      // Footer
+      bytes += await _textToBytes("================================\n");
+      bytes += await _textToBytes("      Terima Kasih Telah       \n");
+      bytes += await _textToBytes("    Berbelanja di Toko Kami    \n");
+      bytes += await _textToBytes("================================\n\n\n");
+
       return await PrintBluetoothThermal.writeBytes(bytes);
     }
     return false;
@@ -149,21 +179,24 @@ class BluetoothPrint {
             text += "\n" * line.linefeed!;
           }
 
+          // Mengatur ukuran font
           int size = line.size ?? 1;
           if (size < 1) size = 1;
           if (size > 5) size = 5;
 
+          // Menyesuaikan lebar maksimal berdasarkan ukuran font
+          int maxWidth = (32 ~/
+              size); // Menyesuaikan lebar maksimal berdasarkan ukuran font
+
           if (line.align == LineText.ALIGN_CENTER) {
-            // Menambahkan spasi di awal untuk perataan tengah
             int textLength = text.length;
-            int padding = (32 - textLength) ~/ 2;
+            int padding = (maxWidth - textLength) ~/ 2;
             if (padding > 0) {
               text = " " * padding + text;
             }
           } else if (line.align == LineText.ALIGN_RIGHT) {
-            // Menambahkan spasi di awal untuk perataan kanan
             int textLength = text.length;
-            int padding = 32 - textLength;
+            int padding = maxWidth - textLength;
             if (padding > 0) {
               text = " " * padding + text;
             }

@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:karposku/consts/mki_colorsv2.dart';
 import 'package:karposku/consts/mki_urls.dart';
 import 'package:intl/intl.dart';
+import 'package:karposku/models/invoice_packing_data.dart';
+import 'package:karposku/utilities/printer_adapter.dart';
+import 'package:karposku/providers/printer_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:karposku/consts/mki_variabels.dart';
 
 class InvoicePackingScreen extends StatefulWidget {
   const InvoicePackingScreen({super.key});
@@ -13,26 +18,51 @@ class InvoicePackingScreen extends StatefulWidget {
 }
 
 class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
-  List<dynamic> invoiceList = [];
+  List<InvoicePackingData> invoiceList = [];
+  Map<String, String> itemsNameMap =
+      {}; // Untuk menyimpan mapping items_id ke nama
   bool isLoading = true;
+  BluetoothPrint? bluetoothPrint;
+  bool isPrinterConnect = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchInvoiceData();
+    _fetchAllData();
   }
 
-  Future<void> _fetchInvoiceData() async {
+  Future<void> _fetchAllData() async {
     try {
       setState(() {
         isLoading = true;
       });
 
+      // Fetch master items terlebih dahulu
+      final itemsList = await MKIUrls.getItemsList();
+
+      // Buat mapping dari items_id ke items_name
+      itemsNameMap = {for (var item in itemsList) item.itemsId: item.itemsName};
+
+      // Kemudian fetch invoice data
       final response = await MKIUrls.getInvoicePacking();
 
       if (response != null && response['status'] == 'success') {
+        final List<InvoicePackingData> tempList = (response['data'] as List)
+            .map((item) => InvoicePackingData.fromJson(item))
+            .toList();
+
+        // Update items name dalam detail
+        for (var invoice in tempList) {
+          for (var detail in invoice.detail) {
+            if (itemsNameMap.containsKey(detail.itemsId)) {
+              detail.itemsName =
+                  itemsNameMap[detail.itemsId] ?? detail.itemsName;
+            }
+          }
+        }
+
         setState(() {
-          invoiceList = response['data'] ?? [];
+          invoiceList = tempList;
           isLoading = false;
         });
       } else {
@@ -42,10 +72,15 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
         });
       }
     } catch (e) {
+      print('Error in _fetchAllData: $e');
       setState(() {
         isLoading = false;
       });
     }
+  }
+
+  Future<void> _onRefresh() async {
+    await _fetchAllData();
   }
 
   @override
@@ -166,7 +201,7 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                           _buildFilterChip(
                             'Baru',
                             count: invoiceList
-                                .where((i) => i['doc_status'] == 'new')
+                                .where((i) => i.docStatus == 'new')
                                 .length,
                             onTap: () {},
                             isDark: true,
@@ -174,7 +209,7 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                           _buildFilterChip(
                             'Diproses',
                             count: invoiceList
-                                .where((i) => i['doc_status'] == 'process')
+                                .where((i) => i.docStatus == 'process')
                                 .length,
                             onTap: () {},
                             isDark: true,
@@ -182,7 +217,7 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                           _buildFilterChip(
                             'Selesai',
                             count: invoiceList
-                                .where((i) => i['doc_status'] == 'done')
+                                .where((i) => i.docStatus == 'done')
                                 .length,
                             onTap: () {},
                             isDark: true,
@@ -208,7 +243,7 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : RefreshIndicator(
-                      onRefresh: _fetchInvoiceData,
+                      onRefresh: _onRefresh,
                       child: invoiceList.isEmpty
                           ? _buildEmptyState()
                           : ListView.builder(
@@ -267,8 +302,14 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
     );
   }
 
-  Widget _buildInvoiceCard(
-      Map<String, dynamic> invoice, NumberFormat formatter) {
+  Widget _buildInvoiceCard(InvoicePackingData invoice, NumberFormat formatter) {
+    // Dapatkan printer provider
+    var printerProvider = Provider.of<PrinterProvider>(context);
+    if (printerProvider.bluetoothPrint != null && printerProvider.isConnect) {
+      bluetoothPrint = printerProvider.bluetoothPrint;
+      isPrinterConnect = printerProvider.isConnect;
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -306,7 +347,7 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      invoice['customer_name'],
+                      invoice.customerName,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -314,7 +355,7 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      formatter.format(invoice['total']),
+                      formatter.format(invoice.total),
                       style: TextStyle(
                         color: MKIColorConstv2.primary,
                         fontWeight: FontWeight.w500,
@@ -328,15 +369,15 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: invoice['doc_status'] == 'new'
+                  color: invoice.docStatus == 'new'
                       ? MKIColorConstv2.secondarySoft.withOpacity(0.2)
                       : MKIColorConstv2.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  invoice['doc_status'].toUpperCase(),
+                  invoice.docStatus.toUpperCase(),
                   style: TextStyle(
-                    color: invoice['doc_status'] == 'new'
+                    color: invoice.docStatus == 'new'
                         ? MKIColorConstv2.secondary
                         : MKIColorConstv2.primary,
                     fontSize: 12,
@@ -368,7 +409,7 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Detail Item (${invoice['detail'].length})',
+                          'Detail Item (${invoice.detail.length})',
                           style: TextStyle(
                             fontSize: 13,
                             color: MKIColorConstv2.neutral600,
@@ -386,9 +427,9 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                       horizontal: 16,
                       vertical: 8,
                     ),
-                    itemCount: invoice['detail'].length,
+                    itemCount: invoice.detail.length,
                     itemBuilder: (context, index) {
-                      final item = invoice['detail'][index];
+                      final item = invoice.detail[index];
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Row(
@@ -403,7 +444,7 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                '${item['qty']}x',
+                                '${item.qty}x',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: MKIColorConstv2.neutral600,
@@ -414,13 +455,12 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                item['items_name'] ??
-                                    'Nama item tidak tersedia',
+                                item.itemsName,
                                 style: const TextStyle(fontSize: 13),
                               ),
                             ),
                             Text(
-                              formatter.format(item['subtotal']),
+                              formatter.format(item.subtotal),
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
@@ -435,39 +475,48 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                   const Divider(height: 1),
                   Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              // TODO: Implementasi edit
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: MKIColorConstv2.secondary,
-                              side: BorderSide(
-                                color:
-                                    MKIColorConstv2.secondary.withOpacity(0.5),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: isPrinterConnect
+                            ? () => _printInvoice(invoice)
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: MKIColorConstv2.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          disabledBackgroundColor: MKIColorConstv2.neutral300,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.print_rounded,
+                              size: 20,
+                              color: isPrinterConnect
+                                  ? Colors.white
+                                  : MKIColorConstv2.neutral500,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isPrinterConnect
+                                  ? 'Cetak Invoice'
+                                  : 'Printer Tidak Terhubung',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: isPrinterConnect
+                                    ? Colors.white
+                                    : MKIColorConstv2.neutral500,
                               ),
-                              padding: const EdgeInsets.symmetric(vertical: 10),
                             ),
-                            child: const Text('Edit'),
-                          ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // TODO: Implementasi print
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: MKIColorConstv2.primary,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                            ),
-                            child: const Text('Cetak'),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
@@ -477,6 +526,166 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _printInvoice(InvoicePackingData invoice) async {
+    if (bluetoothPrint == null) return;
+
+    Map<String, dynamic> config = {};
+    List<LineText> list = [];
+
+    // Fungsi helper untuk membuat teks center
+    String centerText(String text, {int paperWidth = 32}) {
+      if (text.length >= paperWidth) return text;
+      int spaces = (paperWidth - text.length) ~/ 2;
+      return ' ' * spaces + text + ' ' * (paperWidth - text.length - spaces);
+    }
+
+    // Fungsi helper untuk membuat teks justify (space between)
+    String justifyText(String leftText, String rightText,
+        {int paperWidth = 32}) {
+      int totalLength = leftText.length + rightText.length;
+      if (totalLength >= paperWidth) return leftText + rightText;
+      int spaces = paperWidth - totalLength;
+      return leftText + ' ' * spaces + rightText;
+    }
+
+    // Header
+    list.add(LineText(
+      type: LineText.TYPE_TEXT,
+      content: centerText('KARBOTECH JAYA'),
+      align: LineText.ALIGN_LEFT,
+      weight: 2,
+      linefeed: 1,
+    ));
+
+    list.add(LineText(
+      type: LineText.TYPE_TEXT,
+      content: centerText('Jl.Menganti 108'),
+      align: LineText.ALIGN_LEFT,
+      linefeed: 1,
+    ));
+
+    list.add(LineText(
+      type: LineText.TYPE_TEXT,
+      content: centerText('08217888171'),
+      align: LineText.ALIGN_LEFT,
+      linefeed: 1,
+    ));
+
+    // Garis pemisah
+    list.add(LineText(
+      type: LineText.TYPE_TEXT,
+      content: '--------------------------------',
+      align: LineText.ALIGN_LEFT,
+      linefeed: 1,
+    ));
+
+    // Info transaksi dengan justify
+    String currentDate = DateFormat('dd/MM/yy HH:mm').format(DateTime.now());
+    list.add(LineText(
+      type: LineText.TYPE_TEXT,
+      content: justifyText('Tanggal', currentDate),
+      align: LineText.ALIGN_LEFT,
+      linefeed: 1,
+    ));
+
+    list.add(LineText(
+      type: LineText.TYPE_TEXT,
+      content: justifyText('Pelanggan', invoice.customerName),
+      align: LineText.ALIGN_LEFT,
+      linefeed: 1,
+    ));
+
+    list.add(LineText(
+      type: LineText.TYPE_TEXT,
+      content: '--------------------------------',
+      align: LineText.ALIGN_LEFT,
+      linefeed: 1,
+    ));
+
+    // Detail items dengan format yang lebih baik
+    for (var item in invoice.detail) {
+      // Nama item di baris pertama
+      String itemName = item.itemsName;
+      if (itemName.length > 32) {
+        itemName = '${itemName.substring(0, 29)}...';
+      }
+      list.add(LineText(
+        type: LineText.TYPE_TEXT,
+        content: itemName,
+        align: LineText.ALIGN_LEFT,
+        linefeed: 1,
+      ));
+
+      // Qty dan harga di baris kedua dengan justify
+      String qtyPrice = justifyText(
+        '${item.qty} x ${MKIVariabels.formatter.format(item.price).replaceAll('Rp ', '').replaceAll('.000', '')}',
+        MKIVariabels.formatter
+            .format(item.subtotal)
+            .replaceAll('Rp ', '')
+            .replaceAll('.000', ''),
+      );
+      list.add(LineText(
+        type: LineText.TYPE_TEXT,
+        content: qtyPrice,
+        align: LineText.ALIGN_LEFT,
+        linefeed: 1,
+      ));
+    }
+
+    list.add(LineText(
+      type: LineText.TYPE_TEXT,
+      content: '--------------------------------',
+      align: LineText.ALIGN_LEFT,
+      linefeed: 1,
+    ));
+
+    // Total dengan justify
+    String totalAmount = MKIVariabels.formatter
+        .format(invoice.total)
+        .replaceAll('Rp ', '')
+        .replaceAll('.000', '');
+    list.add(LineText(
+      type: LineText.TYPE_TEXT,
+      content: justifyText('TOTAL', totalAmount),
+      align: LineText.ALIGN_LEFT,
+      weight: 1,
+      linefeed: 1,
+    ));
+
+    // Info pembayaran
+    list.add(LineText(
+      type: LineText.TYPE_TEXT,
+      content: centerText('BCA:86500-28288'),
+      align: LineText.ALIGN_LEFT,
+      linefeed: 1,
+    ));
+
+    list.add(LineText(
+      type: LineText.TYPE_TEXT,
+      content: centerText('A/N KARBOTECH'),
+      align: LineText.ALIGN_LEFT,
+      linefeed: 2,
+    ));
+
+    // Footer
+    list.add(LineText(
+      type: LineText.TYPE_TEXT,
+      content: centerText('--Terima Kasih--'),
+      align: LineText.ALIGN_LEFT,
+      linefeed: 1,
+    ));
+
+    // Tambahkan beberapa baris kosong di akhir agar tidak terpotong
+    list.add(LineText(
+      type: LineText.TYPE_TEXT,
+      content: '',
+      align: LineText.ALIGN_LEFT,
+      linefeed: 4,
+    ));
+
+    await bluetoothPrint?.printReceipt(config, list);
   }
 
   Widget _buildFilterChip(
