@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-// import 'package:flutter/widgets.dart';
 import 'package:karposku/consts/mki_colorsv2.dart';
 import 'package:karposku/consts/mki_urls.dart';
 import 'package:karposku/screens/about_screen.dart';
-import 'package:karposku/screens/navigation_screen.dart';
 import 'package:karposku/screens/printers/printer_list_screen.dart';
 import 'package:karposku/screens/packing_screen.dart';
 import 'package:karposku/screens/invoice_packing_screen.dart';
 import 'package:karposku/screens/items_list_screen.dart';
 import 'package:karposku/screens/sales_screen.dart';
 import 'package:karposku/screens/profile_screen.dart';
-// import 'package:karposku/consts/mki_styles.dart';
-// import 'package:karposku/consts/mki_variabels.dart';
+import 'package:karposku/screens/packing_history_screen.dart';
+import 'package:intl/intl.dart';
+import 'package:karposku/consts/mki_variabels.dart';
+import 'package:karposku/utilities/local_storage.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,18 +24,53 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String profilePath = '';
+  String userName = '';
   Map<String, dynamic> menuData = {
     'status': 'success',
     'message': 'berhasil mendapatkan data menu',
     'data': []
   };
   bool isLoading = true;
+  Map<String, dynamic> summaryData = {
+    'total_count': 0,
+    'total_price': 0,
+    'total': 0
+  };
+  Map<String, dynamic> packingHistoryData = {
+    'status': 'success',
+    'message': 'data retrieved successfully',
+    'data': []
+  };
 
   @override
   void initState() {
     super.initState();
-    setImgPath();
-    _loadMenuData();
+    _loadAllData();
+  }
+
+  Future<void> _loadAllData() async {
+    await setImgPath();
+    await _loadMenuData();
+    await _loadSummaryData();
+    await _loadUserName();
+    await _loadPackingHistory();
+  }
+
+  Future<void> _onRefresh() async {
+    setState(() {
+      isLoading = true;
+    });
+    await _loadAllData();
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  Future<void> _loadUserName() async {
+    final name = await LocalStorage.load(MKIVariabels.profileName);
+    setState(() {
+      userName = name.toString();
+    });
   }
 
   Future<void> _loadMenuData() async {
@@ -52,6 +87,32 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         isLoading = false;
       });
+    }
+  }
+
+  Future<void> _loadSummaryData() async {
+    try {
+      final response = await MKIUrls.getSummaryPacking();
+      if (response['status'] == 'success') {
+        setState(() {
+          summaryData = response['data'];
+        });
+      }
+    } catch (e) {
+      print('Error mengambil data summary: $e');
+    }
+  }
+
+  Future<void> _loadPackingHistory() async {
+    try {
+      final response = await MKIUrls.getPackingHistory();
+      if (response['status'] == 'success') {
+        setState(() {
+          packingHistoryData = response;
+        });
+      }
+    } catch (e) {
+      print('Error mengambil data riwayat: $e');
     }
   }
 
@@ -148,238 +209,283 @@ class _HomeScreenState extends State<HomeScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      body: Container(
-        width: screenWidth,
-        height: screenHeight,
-        decoration: BoxDecoration(
-          color: MKIColorConstv2.neutral200,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header section
-              Container(
-                padding: EdgeInsets.only(top: 50, bottom: 20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      MKIColorConstv2.secondaryDark,
-                      MKIColorConstv2.secondary.withOpacity(0.95),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Halo, Iqbal Prasetya!',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: MKIColorConstv2.neutral100,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              Icon(Icons.location_on_outlined,
-                                  size: 16, color: MKIColorConstv2.neutral300),
-                              Text(
-                                'Cabang Depok',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: MKIColorConstv2.neutral300,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: MKIColorConstv2.secondary,
-                            width: 2,
-                          ),
-                        ),
-                        child: CircleAvatar(
-                          radius: 25,
-                          backgroundColor: MKIColorConstv2.neutral100,
-                          child: profilePath.isNotEmpty
-                              ? ClipOval(
-                                  child: Image.network(
-                                    profilePath,
-                                    width: 50,
-                                    height: 50,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Icon(
-                                        Icons.person,
-                                        size: 30,
-                                        color: MKIColorConstv2.neutral400,
-                                      );
-                                    },
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.person,
-                                  size: 30,
-                                  color: MKIColorConstv2.neutral400,
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Pendapatan card
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Container(
-                  padding: EdgeInsets.all(15),
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        color: MKIColorConstv2.secondary,
+        backgroundColor: MKIColorConstv2.neutral100,
+        child: Container(
+          width: screenWidth,
+          height: screenHeight,
+          decoration: BoxDecoration(
+            color: MKIColorConstv2.neutral200,
+          ),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header section
+                Container(
+                  padding: EdgeInsets.only(top: 50, bottom: 20),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        MKIColorConstv2.primary,
-                        MKIColorConstv2.primaryLight,
+                        MKIColorConstv2.secondaryDark,
+                        MKIColorConstv2.secondary.withOpacity(0.95),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: MKIColorConstv2.primary.withOpacity(0.2),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(30),
+                      bottomRight: Radius.circular(30),
+                    ),
                   ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Halo, $userName!',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: MKIColorConstv2.neutral100,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Icon(Icons.calendar_today_outlined,
+                                    size: 16,
+                                    color: MKIColorConstv2.neutral300),
+                                SizedBox(width: 4),
+                                Text(
+                                  DateFormat('dd MMMM yyyy')
+                                      .format(DateTime.now()),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: MKIColorConstv2.neutral300,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: MKIColorConstv2.secondary,
+                              width: 2,
+                            ),
+                          ),
+                          child: CircleAvatar(
+                            radius: 25,
+                            backgroundColor: MKIColorConstv2.neutral100,
+                            child: profilePath.isNotEmpty
+                                ? ClipOval(
+                                    child: Image.network(
+                                      profilePath,
+                                      width: 50,
+                                      height: 50,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return Icon(
+                                          Icons.person,
+                                          size: 30,
+                                          color: MKIColorConstv2.neutral400,
+                                        );
+                                      },
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.person,
+                                    size: 30,
+                                    color: MKIColorConstv2.neutral400,
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Pendapatan card
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Container(
+                    padding: EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          MKIColorConstv2.primary,
+                          MKIColorConstv2.primaryLight,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: MKIColorConstv2.primary.withOpacity(0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: MKIColorConstv2.neutral100,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    Icons.account_balance_wallet,
+                                    color: MKIColorConstv2.primary,
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Text(
+                                  'Pendapatan Minggu Ini',
+                                  style: TextStyle(
+                                    color: MKIColorConstv2.neutral100,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color:
+                                    MKIColorConstv2.neutral100.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${summaryData['total_count']} Transaksi',
+                                style: TextStyle(
+                                  color: MKIColorConstv2.neutral100,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 12),
+                        Text(
+                          'Rp ${NumberFormat('#,##0', 'id_ID').format(summaryData['total'])}',
+                          style: TextStyle(
+                            color: MKIColorConstv2.neutral100,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Menu Grid
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: GridView.count(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    children: (menuData['data'] as List).map((menuItem) {
+                      return _buildMenuItem(
+                        menuItem['title'],
+                        _getMenuIcon(menuItem['icon_name']),
+                        () => _handleNavigation(menuItem['route']),
+                        iconColor: MKIColorConstv2.secondary,
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+                // Riwayat Pembelian section
+                Padding(
+                  padding: const EdgeInsets.all(20),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: MKIColorConstv2.neutral100,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.account_balance_wallet,
+                          Text(
+                            'Riwayat Pembelian',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                               color: MKIColorConstv2.primary,
                             ),
                           ),
-                          SizedBox(width: 12),
-                          Text(
-                            'Pendapatan Hari ini',
-                            style: TextStyle(
-                              color: MKIColorConstv2.neutral100,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const PackingHistoryScreen(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Lihat Semua',
+                              style: TextStyle(
+                                color: MKIColorConstv2.primaryLight,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 12),
-                      Text(
-                        'Rp. 3,650,000',
-                        style: TextStyle(
-                          color: MKIColorConstv2.neutral100,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
-                      ),
+                      SizedBox(height: 15),
+                      if (packingHistoryData['data'].isEmpty)
+                        Center(
+                          child: Text(
+                            'Belum ada riwayat pembelian',
+                            style: TextStyle(
+                              color: MKIColorConstv2.neutral500,
+                              fontSize: 14,
+                            ),
+                          ),
+                        )
+                      else
+                        ...packingHistoryData['data'].map((item) {
+                          String items = item['detail'].join(', ');
+                          return _buildRiwayatItem(
+                            item['_id'] ?? '',
+                            items,
+                            NumberFormat('#,##0', 'id_ID')
+                                .format(item['total'] ?? 0),
+                          );
+                        }).toList(),
                     ],
                   ),
                 ),
-              ),
-
-              // Menu Grid
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: GridView.count(
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  crossAxisCount: 4,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  children: (menuData['data'] as List).map((menuItem) {
-                    return _buildMenuItem(
-                      menuItem['title'],
-                      _getMenuIcon(menuItem['icon_name']),
-                      () => _handleNavigation(menuItem['route']),
-                      iconColor: MKIColorConstv2.secondary,
-                    );
-                  }).toList(),
-                ),
-              ),
-
-              // Riwayat Pembelian section
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Riwayat Pembelian',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: MKIColorConstv2.primary,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            'Lihat Semua',
-                            style: TextStyle(
-                              color: MKIColorConstv2.primaryLight,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 15),
-                    _buildRiwayatItem(
-                      'INV20250101082',
-                      'Galon, tap Mobil, Sabun',
-                      '21,000',
-                    ),
-                    _buildRiwayatItem(
-                      'INV20250232144',
-                      'Rokok, Permen, Gas 3kg, Beras',
-                      '340,000',
-                    ),
-                    _buildRiwayatItem(
-                      'INV20232123519',
-                      'Indomie, Tepung, Gas 3kg',
-                      '178,500',
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -390,32 +496,40 @@ class _HomeScreenState extends State<HomeScreen> {
       {Color? iconColor}) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: (iconColor ?? MKIColorConstv2.primary).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: (iconColor ?? MKIColorConstv2.primary).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: iconColor ?? MKIColorConstv2.primary,
+              ),
             ),
-            child: Icon(
-              icon,
-              size: 26,
-              color: iconColor ?? MKIColorConstv2.primary,
+            SizedBox(height: 6),
+            SizedBox(
+              width: 65,
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: MKIColorConstv2.secondaryDark,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: MKIColorConstv2.secondaryDark,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

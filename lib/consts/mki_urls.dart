@@ -10,7 +10,6 @@ import 'package:karposku/models/items_data.dart';
 import 'package:karposku/models/user_data.dart';
 import 'package:karposku/utilities/local_storage.dart';
 import 'package:karposku/models/items_cart_data.dart';
-import 'package:flutter/material.dart';
 
 class MKIUrls {
   // static const String baseUrl = 'https://sangati-server.herokuapp.com/mobile';
@@ -683,6 +682,72 @@ class MKIUrls {
       return {
         'status': 'failed',
         'message': 'Gagal mengambil data top bar',
+        'data': []
+      };
+    } catch (e) {
+      return {
+        'status': 'failed',
+        'message': 'Terjadi kesalahan: $e',
+        'data': []
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getSummaryPacking() async {
+    String token = await LocalStorage.load(MKIVariabels.token);
+    var headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    final url =
+        Uri.parse('$transUrl/invoice_temp/report/summary?date_range=weekly');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        if (data['status'] == 'success') {
+          return {'status': 'success', 'data': data['data']};
+        }
+      }
+      return {
+        'status': 'failed',
+        'message': 'Gagal mengambil data summary',
+        'data': {'total_count': 0, 'total_price': 0, 'total': 0}
+      };
+    } catch (e) {
+      return {
+        'status': 'failed',
+        'message': 'Terjadi kesalahan: $e',
+        'data': {'total_count': 0, 'total_price': 0, 'total': 0}
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getPackingHistory({int limit = 3}) async {
+    String token = await LocalStorage.load(MKIVariabels.token);
+    var headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    final url = Uri.parse('$transUrl/invoice_temp/home?limit=$limit');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {
+        'status': 'failed',
+        'message': 'Gagal mengambil data riwayat',
         'data': []
       };
     } catch (e) {

@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:karposku/screens/items_selection_screen.dart';
 import 'package:karposku/consts/mki_variabels.dart';
 import 'package:karposku/consts/mki_urls.dart';
-import 'package:karposku/utilities/local_storage.dart';
 
 class PackingScreen extends StatefulWidget {
   const PackingScreen({super.key});
