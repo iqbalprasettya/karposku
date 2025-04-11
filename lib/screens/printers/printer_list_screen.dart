@@ -106,6 +106,49 @@ class _PrinterListScreenState extends State<PrinterListScreen> {
     try {
       setState(() {
         _isInitializing = true;
+        _isCheckingPrinter = false;
+        tips = 'Memeriksa izin yang diperlukan...';
+      });
+
+      // Periksa dan minta izin terlebih dahulu
+      if (Platform.isAndroid) {
+        // Minta izin lokasi dan bluetooth
+        Map<Permission, PermissionStatus> statuses = await [
+          Permission.bluetoothScan,
+          Permission.bluetoothConnect,
+          Permission.locationWhenInUse,
+          Permission.bluetoothAdvertise,
+        ].request();
+
+        // Periksa apakah semua izin telah diberikan
+        bool allGranted = statuses.values.every((status) => status.isGranted);
+
+        if (!allGranted) {
+          setState(() {
+            _isInitializing = false;
+            tips = 'Izin diperlukan untuk menggunakan fitur printer';
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Beberapa izin diperlukan untuk menggunakan fitur printer'),
+                backgroundColor: MKIColorConstv2.error,
+                duration: Duration(seconds: 5),
+                action: SnackBarAction(
+                  label: 'Pengaturan',
+                  textColor: Colors.white,
+                  onPressed: () => openAppSettings(),
+                ),
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      setState(() {
         _isCheckingPrinter = true;
         tips = 'Memeriksa printer yang terhubung...';
       });
@@ -431,6 +474,34 @@ class _PrinterListScreenState extends State<PrinterListScreen> {
   // Mulai scan perangkat Bluetooth
   void startScan() async {
     if (!mounted) return;
+
+    // Periksa izin terlebih dahulu
+    if (Platform.isAndroid) {
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.bluetoothScan,
+        Permission.bluetoothConnect,
+        Permission.locationWhenInUse,
+        Permission.bluetoothAdvertise,
+      ].request();
+
+      bool allGranted = statuses.values.every((status) => status.isGranted);
+
+      if (!allGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Izin diperlukan untuk memindai perangkat'),
+            backgroundColor: MKIColorConstv2.error,
+            duration: Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Pengaturan',
+              textColor: Colors.white,
+              onPressed: () => openAppSettings(),
+            ),
+          ),
+        );
+        return;
+      }
+    }
 
     // Jika Bluetooth tidak aktif, tampilkan dialog
     if (!_isBluetoothOn) {

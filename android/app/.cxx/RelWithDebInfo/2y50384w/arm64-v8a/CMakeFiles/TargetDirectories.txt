@@ -1,0 +1,2 @@
+D:/iqbalprasettya/flutter/karposku/android/app/.cxx/RelWithDebInfo/2y50384w/arm64-v8a/CMakeFiles/edit_cache.dir
+D:/iqbalprasettya/flutter/karposku/android/app/.cxx/RelWithDebInfo/2y50384w/arm64-v8a/CMakeFiles/rebuild_cache.dir

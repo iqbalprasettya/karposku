@@ -55,7 +55,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   // Modifikasi _tabs untuk menggunakan data dari API
   List<Widget> get _tabs {
-    final activeItems = (navigationData['items'] as List? ?? []);
+    final activeItems = List.from(navigationData['items'] as List? ?? [])
+      ..sort((a, b) => int.parse(a['order'].toString())
+          .compareTo(int.parse(b['order'].toString())));
 
     return activeItems.map((item) {
       switch (item['route']) {
@@ -106,7 +108,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
   }
 
   List<BottomNavigationBarItem> _buildNavigationItems() {
-    final activeItems = (navigationData['items'] as List? ?? []);
+    final activeItems = List.from(navigationData['items'] as List? ?? [])
+      ..sort((a, b) => int.parse(a['order'].toString())
+          .compareTo(int.parse(b['order'].toString())));
 
     return activeItems.map((item) {
       final index = activeItems.indexOf(item);
