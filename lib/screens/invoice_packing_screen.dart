@@ -7,6 +7,9 @@ import 'package:karposku/utilities/printer_adapter.dart';
 import 'package:karposku/providers/printer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:karposku/consts/mki_variabels.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:karposku/utilities/local_storage.dart';
 
 class InvoicePackingScreen extends StatefulWidget {
   const InvoicePackingScreen({super.key});
@@ -24,6 +27,7 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
   bool isLoading = true;
   BluetoothPrint? bluetoothPrint;
   bool isPrinterConnect = false;
+  final TextEditingController _paymentController = TextEditingController();
 
   @override
   void initState() {
@@ -60,6 +64,9 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
             }
           }
         }
+
+        // Mengurutkan data berdasarkan createdAt terbaru
+        tempList.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
         setState(() {
           invoiceList = tempList;
@@ -475,48 +482,78 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                   const Divider(height: 1),
                   Padding(
                     padding: const EdgeInsets.all(16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: isPrinterConnect
-                            ? () => _printInvoice(invoice)
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: MKIColorConstv2.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          disabledBackgroundColor: MKIColorConstv2.neutral300,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.print_rounded,
-                              size: 20,
-                              color: isPrinterConnect
-                                  ? Colors.white
-                                  : MKIColorConstv2.neutral500,
+                    child: Column(
+                      children: [
+                        ElevatedButton(
+                          onPressed: isPrinterConnect
+                              ? () => _printInvoice(invoice)
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: MKIColorConstv2.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            minimumSize: const Size(double.infinity, 45),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              isPrinterConnect
-                                  ? 'Cetak Invoice'
-                                  : 'Printer Tidak Terhubung',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                            disabledBackgroundColor: MKIColorConstv2.neutral300,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.print_rounded,
+                                size: 20,
                                 color: isPrinterConnect
                                     ? Colors.white
                                     : MKIColorConstv2.neutral500,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              Text(
+                                isPrinterConnect
+                                    ? 'Cetak Invoice'
+                                    : 'Printer Tidak Terhubung',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: isPrinterConnect
+                                      ? Colors.white
+                                      : MKIColorConstv2.neutral500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () => _showPaymentDialog(invoice),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: MKIColorConstv2.secondary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            minimumSize: const Size(double.infinity, 45),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.payment, size: 20),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Proses Pembayaran',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -686,6 +723,303 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
     ));
 
     await bluetoothPrint?.printReceipt(config, list);
+  }
+
+  void _showPaymentDialog(InvoicePackingData invoice) {
+    double totalPayment = invoice.total;
+    _paymentController.text = '';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            double payment = _paymentController.text.isEmpty
+                ? 0
+                : double.parse(
+                    _paymentController.text.replaceAll(RegExp(r'[^0-9]'), ''));
+            double change = payment - totalPayment;
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.9,
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Proses Pembayaran',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              invoice.customerName,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: MKIColorConstv2.neutral600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(
+                            Icons.close,
+                            color: MKIColorConstv2.neutral500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Total Pembayaran Card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: MKIColorConstv2.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Total Pembayaran',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: MKIColorConstv2.neutral600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            MKIVariabels.formatter.format(totalPayment),
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: MKIColorConstv2.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Input Pembayaran
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Jumlah Pembayaran',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: MKIColorConstv2.neutral700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _paymentController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          decoration: InputDecoration(
+                            prefixText: 'Rp ',
+                            prefixStyle: TextStyle(
+                              color: MKIColorConstv2.neutral700,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            filled: true,
+                            fillColor: MKIColorConstv2.neutral100,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: MKIColorConstv2.neutral200,
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: MKIColorConstv2.primary,
+                                width: 1.5,
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                          ),
+                          onChanged: (value) {
+                            setState(() {});
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Kembalian Card
+                    if (_paymentController.text.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: change >= 0
+                              ? MKIColorConstv2.secondarySoft.withOpacity(0.3)
+                              : Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Kembalian',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: change >= 0
+                                    ? MKIColorConstv2.secondary
+                                    : Colors.red,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              MKIVariabels.formatter.format(change),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: change >= 0
+                                    ? MKIColorConstv2.secondary
+                                    : Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 24),
+
+                    // Tombol Aksi
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: MKIColorConstv2.neutral200,
+                              foregroundColor: MKIColorConstv2.neutral700,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Batal',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: payment >= totalPayment
+                                ? () =>
+                                    _processPayment(invoice, payment, change)
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: MKIColorConstv2.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              disabledBackgroundColor:
+                                  MKIColorConstv2.neutral300,
+                            ),
+                            child: const Text(
+                              'Proses',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _processPayment(
+      InvoicePackingData invoice, double payment, double change) async {
+    try {
+      // Menyiapkan data untuk API
+      Map<String, dynamic> requestBody = {
+        'total': invoice.total,
+        'total_discount': 0, // Sesuaikan jika ada diskon
+        'total_payment': payment,
+        'list_product': invoice.detail
+            .map((item) => {
+                  'items_id': item.itemsId,
+                  'items_name': item.itemsName,
+                  'qty': item.qty,
+                  'price_sell': item.price,
+                  'promo_value': 0, // Sesuaikan jika ada promo
+                })
+            .toList(),
+      };
+
+      final result = await MKIUrls.processInvoicePayment(requestBody);
+
+      if (result['status'] == 'success') {
+        Navigator.pop(context); // Tutup dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Pembayaran berhasil diproses'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _fetchAllData(); // Refresh data
+      } else {
+        throw Exception(result['message']);
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildFilterChip(

@@ -4,6 +4,7 @@ class InvoicePackingData {
   final double total;
   final String docStatus;
   final List<InvoicePackingItem> detail;
+  final DateTime createdAt;
 
   InvoicePackingData({
     required this.id,
@@ -11,6 +12,7 @@ class InvoicePackingData {
     required this.total,
     required this.docStatus,
     required this.detail,
+    required this.createdAt,
   });
 
   factory InvoicePackingData.fromJson(Map<String, dynamic> json) {
@@ -22,6 +24,9 @@ class InvoicePackingData {
       detail: (json['detail'] as List)
           .map((item) => InvoicePackingItem.fromJson(item))
           .toList(),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
     );
   }
 }

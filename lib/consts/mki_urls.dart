@@ -47,7 +47,7 @@ class MKIUrls {
     // 'http://141.11.190.114:30038/karposku_api/company/mobile';
     // print(MKIUrls.transUrl);
     String url =
-        'http://141.11.190.114:30038/karposku_api/mobile/register/recordnation';
+        'http://202.157.176.220:8050/karposku_api/mobile/register/recordnation';
     var request = http.MultipartRequest('POST', Uri.parse(url));
     request.fields.addAll(
       {
@@ -78,7 +78,7 @@ class MKIUrls {
       // 'Content-Type': 'application/json'
     };
     String url =
-        'http://141.11.190.114:30038/karposku_api/mobile/login/recordnation';
+        'http://202.157.176.220:8050/karposku_api/mobile/login/recordnation';
     var request = http.MultipartRequest('POST', Uri.parse(url));
     request.fields.addAll({'face_recognition': hashface});
     request.headers.addAll(headers);
@@ -110,7 +110,7 @@ class MKIUrls {
     // 'https://karbo.my.id/karposku_api/mobile'; // live
 
     const String loginUrlNew =
-        'http://141.11.190.114:30038/karposku_api/company/mobile'; // dev
+        'http://202.157.176.220:8050/karposku_api/company/mobile'; // dev
     // const String loginUrlNew = 'http://213.190.4.80/user/mobile';
     // const String loginUrlNew = 'http://213.190.4.80:8020/api/company/mobile';
     // const String loginUrlNew = 'https://karbo-api.my.id:8888/mobile'; // live
@@ -755,6 +755,41 @@ class MKIUrls {
         'status': 'failed',
         'message': 'Terjadi kesalahan: $e',
         'data': []
+      };
+    }
+  }
+
+  // Menambahkan method untuk proses pembayaran invoice
+  static Future<Map<String, dynamic>> processInvoicePayment(
+      Map<String, dynamic> paymentData) async {
+    String token = await LocalStorage.load(MKIVariabels.token);
+    var headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json'
+    };
+
+    final url = Uri.parse('$transUrl/invoice/add_sales_product');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode(paymentData),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {
+        'status': 'failed',
+        'message': 'Gagal memproses pembayaran',
+        'data': null
+      };
+    } catch (e) {
+      return {
+        'status': 'failed',
+        'message': 'Terjadi kesalahan: $e',
+        'data': null
       };
     }
   }

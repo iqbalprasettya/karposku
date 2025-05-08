@@ -10,7 +10,7 @@ class MKIVariabels {
   static const picPath = 'picPath';
   static const driver = 'driver';
   static const assistant = 'assistant';
-  static String transUrl = 'http://141.11.190.114:30038/karposku_api/mobile';
+  static String transUrl = 'http://202.157.176.220:8050/karposku_api/mobile';
   static var formatter = NumberFormat('###,###,000');
 
   static const yearlyData = 'yearly';

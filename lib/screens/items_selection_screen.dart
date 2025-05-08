@@ -448,16 +448,18 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Nama Produk
-                    Text(
-                      item.itemsName,
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.2,
-                        fontWeight: FontWeight.w600,
-                        color: MKIColorConstv2.secondaryDark,
+                    Flexible(
+                      child: Text(
+                        item.itemsName,
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.2,
+                          fontWeight: FontWeight.w600,
+                          color: MKIColorConstv2.secondaryDark,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
 
                     // Harga dan Promo Info
@@ -466,57 +468,61 @@ class _ItemsSelectionScreenState extends State<ItemsSelectionScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (item.isPromo) ...[
-                          // Label Diskon dengan Badge
-                          Container(
-                            margin: EdgeInsets.only(bottom: 4),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color:
-                                  MKIColorConstv2.primaryLight.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.arrow_downward,
-                                  size: 12,
-                                  color: MKIColorConstv2.primaryLight,
+                          // Label Diskon dan Harga Asli dalam satu baris
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Label Diskon dengan Badge
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 1,
                                 ),
-                                SizedBox(width: 2),
-                                Text(
-                                  '${((item.promoValue / item.sellPrice) * 100).round()}%',
+                                decoration: BoxDecoration(
+                                  color: MKIColorConstv2.primaryLight
+                                      .withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.arrow_downward,
+                                      size: 12,
+                                      color: MKIColorConstv2.primaryLight,
+                                    ),
+                                    SizedBox(width: 2),
+                                    Text(
+                                      '${((item.promoValue / item.sellPrice) * 100).round()}%',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: MKIColorConstv2.primaryLight,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Harga Asli (Coret)
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 4, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: MKIColorConstv2.neutral200,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Rp ${MKIVariabels.formatter.format(item.sellPrice)}',
                                   style: TextStyle(
                                     fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: MKIColorConstv2.primaryLight,
+                                    color: MKIColorConstv2.neutral500,
+                                    decoration: TextDecoration.lineThrough,
+                                    decorationColor: MKIColorConstv2.neutral400,
+                                    decorationThickness: 2,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                          // Harga Asli (Coret)
-                          Container(
-                            margin: EdgeInsets.only(bottom: 2),
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 4, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: MKIColorConstv2.neutral200,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'Rp ${MKIVariabels.formatter.format(item.sellPrice)}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: MKIColorConstv2.neutral500,
-                                decoration: TextDecoration.lineThrough,
-                                decorationColor: MKIColorConstv2.neutral400,
-                                decorationThickness: 2,
                               ),
-                            ),
+                            ],
                           ),
                           SizedBox(height: 4),
                         ],
