@@ -793,4 +793,47 @@ class MKIUrls {
       };
     }
   }
+
+  static Future<Map<String, dynamic>> updateInvoiceTempStatus(
+      String invoiceId) async {
+    String token = await LocalStorage.load(MKIVariabels.token);
+    var headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json'
+    };
+
+    final url = Uri.parse('$transUrl/invoice_temp/$invoiceId');
+
+    // print('Update Invoice Status URL: $url');
+    // print('Headers: $headers');
+    // print('Invoice ID: $invoiceId');
+
+    try {
+      final response = await http.put(
+        url,
+        headers: headers,
+        body: jsonEncode({'doc_status': 'done'}),
+      );
+
+      // print('Response Status Code: ${response.statusCode}');
+      // print('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        var jsonResponse = jsonDecode(response.body);
+        // print('Parsed Response: $jsonResponse');
+        return jsonResponse;
+      }
+
+      return {
+        'status': 'failed',
+        'message': 'Gagal mengupdate status invoice',
+      };
+    } catch (e) {
+      // print('Error updating invoice status: $e');
+      return {
+        'status': 'failed',
+        'message': 'Terjadi kesalahan: $e',
+      };
+    }
+  }
 }

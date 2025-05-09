@@ -10,6 +10,8 @@ import 'package:karposku/consts/mki_variabels.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:karposku/utilities/local_storage.dart';
+import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
+import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 
 class InvoicePackingScreen extends StatefulWidget {
   const InvoicePackingScreen({super.key});
@@ -22,17 +24,59 @@ class InvoicePackingScreen extends StatefulWidget {
 
 class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
   List<InvoicePackingData> invoiceList = [];
+  List<InvoicePackingData> filteredInvoiceList = [];
+  String selectedFilter = 'Semua';
   Map<String, String> itemsNameMap =
       {}; // Untuk menyimpan mapping items_id ke nama
   bool isLoading = true;
   BluetoothPrint? bluetoothPrint;
   bool isPrinterConnect = false;
   final TextEditingController _paymentController = TextEditingController();
+  Map<String, dynamic>? userData;
 
   @override
   void initState() {
     super.initState();
     _fetchAllData();
+    _getUserData();
+  }
+
+  Future<void> _getUserData() async {
+    try {
+      final userDataString = await LocalStorage.load('user_data');
+      if (userDataString != null && userDataString != '') {
+        setState(() {
+          userData = json.decode(userDataString);
+        });
+      }
+    } catch (e) {
+      print('Error getting user data: $e');
+    }
+  }
+
+  void filterInvoices(String filter) {
+    setState(() {
+      selectedFilter = filter;
+      if (filter == 'Semua') {
+        filteredInvoiceList = List.from(invoiceList);
+      } else {
+        String status = '';
+        switch (filter) {
+          case 'Baru':
+            status = 'new';
+            break;
+          case 'Diproses':
+            status = 'process';
+            break;
+          case 'Selesai':
+            status = 'done';
+            break;
+        }
+        filteredInvoiceList = invoiceList
+            .where((invoice) => invoice.docStatus == status)
+            .toList();
+      }
+    });
   }
 
   Future<void> _fetchAllData() async {
@@ -70,11 +114,13 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
 
         setState(() {
           invoiceList = tempList;
+          filterInvoices(selectedFilter); // Terapkan filter yang aktif
           isLoading = false;
         });
       } else {
         setState(() {
           invoiceList = [];
+          filteredInvoiceList = [];
           isLoading = false;
         });
       }
@@ -157,7 +203,7 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${invoiceList.length} pesanan dalam proses',
+                                  '${invoiceList.length} Transaksi',
                                   style: TextStyle(
                                     color: Colors.white.withOpacity(0.8),
                                     fontSize: 14,
@@ -167,28 +213,28 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                             ),
                           ],
                         ),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(
-                                Icons.search,
-                                color: Colors.white,
-                              ),
-                              onPressed: () {
-                                // TODO: Implementasi search
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.filter_list,
-                                color: Colors.white,
-                              ),
-                              onPressed: () {
-                                // TODO: Implementasi filter
-                              },
-                            ),
-                          ],
-                        ),
+                        // Row(
+                        //   children: [
+                        //     IconButton(
+                        //       icon: const Icon(
+                        //         Icons.search,
+                        //         color: Colors.white,
+                        //       ),
+                        //       onPressed: () {
+                        //         // TODO: Implementasi search
+                        //       },
+                        //     ),
+                        //     IconButton(
+                        //       icon: const Icon(
+                        //         Icons.filter_list,
+                        //         color: Colors.white,
+                        //       ),
+                        //       onPressed: () {
+                        //         // TODO: Implementasi filter
+                        //       },
+                        //     ),
+                        //   ],
+                        // ),
                       ],
                     ),
                   ),
@@ -201,8 +247,8 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                         children: [
                           _buildFilterChip(
                             'Semua',
-                            isSelected: true,
-                            onTap: () {},
+                            isSelected: selectedFilter == 'Semua',
+                            onTap: () => filterInvoices('Semua'),
                             isDark: true,
                           ),
                           _buildFilterChip(
@@ -210,15 +256,8 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                             count: invoiceList
                                 .where((i) => i.docStatus == 'new')
                                 .length,
-                            onTap: () {},
-                            isDark: true,
-                          ),
-                          _buildFilterChip(
-                            'Diproses',
-                            count: invoiceList
-                                .where((i) => i.docStatus == 'process')
-                                .length,
-                            onTap: () {},
+                            isSelected: selectedFilter == 'Baru',
+                            onTap: () => filterInvoices('Baru'),
                             isDark: true,
                           ),
                           _buildFilterChip(
@@ -226,7 +265,17 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                             count: invoiceList
                                 .where((i) => i.docStatus == 'done')
                                 .length,
-                            onTap: () {},
+                            isSelected: selectedFilter == 'Selesai',
+                            onTap: () => filterInvoices('Selesai'),
+                            isDark: true,
+                          ),
+                          _buildFilterChip(
+                            'Diproses',
+                            count: invoiceList
+                                .where((i) => i.docStatus == 'process')
+                                .length,
+                            isSelected: selectedFilter == 'Diproses',
+                            onTap: () => filterInvoices('Diproses'),
                             isDark: true,
                           ),
                         ],
@@ -251,13 +300,13 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                   ? const Center(child: CircularProgressIndicator())
                   : RefreshIndicator(
                       onRefresh: _onRefresh,
-                      child: invoiceList.isEmpty
+                      child: filteredInvoiceList.isEmpty
                           ? _buildEmptyState()
                           : ListView.builder(
                               padding: const EdgeInsets.all(16),
-                              itemCount: invoiceList.length,
+                              itemCount: filteredInvoiceList.length,
                               itemBuilder: (context, index) {
-                                final invoice = invoiceList[index];
+                                final invoice = filteredInvoiceList[index];
                                 return _buildInvoiceCard(
                                     invoice, currencyFormatter);
                               },
@@ -378,15 +427,23 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                 decoration: BoxDecoration(
                   color: invoice.docStatus == 'new'
                       ? MKIColorConstv2.secondarySoft.withOpacity(0.2)
-                      : MKIColorConstv2.primary.withOpacity(0.1),
+                      : invoice.docStatus == 'process'
+                          ? MKIColorConstv2.primarySoft.withOpacity(0.2)
+                          : MKIColorConstv2.primarySoft.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  invoice.docStatus.toUpperCase(),
+                  invoice.docStatus == 'new'
+                      ? 'Baru'
+                      : invoice.docStatus == 'process'
+                          ? 'Diproses'
+                          : 'Selesai',
                   style: TextStyle(
                     color: invoice.docStatus == 'new'
                         ? MKIColorConstv2.secondary
-                        : MKIColorConstv2.primary,
+                        : invoice.docStatus == 'process'
+                            ? MKIColorConstv2.primary
+                            : MKIColorConstv2.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -527,7 +584,9 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                         ),
                         const SizedBox(height: 8),
                         ElevatedButton(
-                          onPressed: () => _showPaymentDialog(invoice),
+                          onPressed: invoice.docStatus == 'done'
+                              ? null
+                              : () => _showPaymentDialog(invoice),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: MKIColorConstv2.secondary,
                             foregroundColor: Colors.white,
@@ -536,6 +595,7 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
+                            disabledBackgroundColor: MKIColorConstv2.neutral300,
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -543,9 +603,11 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                             children: [
                               Icon(Icons.payment, size: 20),
                               const SizedBox(width: 8),
-                              const Text(
-                                'Proses Pembayaran',
-                                style: TextStyle(
+                              Text(
+                                invoice.docStatus == 'done'
+                                    ? 'Pembayaran Selesai'
+                                    : 'Proses Pembayaran',
+                                style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -568,161 +630,150 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
   Future<void> _printInvoice(InvoicePackingData invoice) async {
     if (bluetoothPrint == null) return;
 
-    Map<String, dynamic> config = {};
-    List<LineText> list = [];
+    bool connected = await PrintBluetoothThermal.connectionStatus;
+    if (connected) {
+      List<int> bytes = [];
 
-    // Fungsi helper untuk membuat teks center
-    String centerText(String text, {int paperWidth = 32}) {
-      if (text.length >= paperWidth) return text;
-      int spaces = (paperWidth - text.length) ~/ 2;
-      return ' ' * spaces + text + ' ' * (paperWidth - text.length - spaces);
-    }
+      // Inisialisasi generator
+      final profile = await CapabilityProfile.load();
+      final generator = Generator(PaperSize.mm58, profile);
 
-    // Fungsi helper untuk membuat teks justify (space between)
-    String justifyText(String leftText, String rightText,
-        {int paperWidth = 32}) {
-      int totalLength = leftText.length + rightText.length;
-      if (totalLength >= paperWidth) return leftText + rightText;
-      int spaces = paperWidth - totalLength;
-      return leftText + ' ' * spaces + rightText;
-    }
+      // Reset printer
+      bytes += generator.reset();
 
-    // Header
-    list.add(LineText(
-      type: LineText.TYPE_TEXT,
-      content: centerText('KARBOTECH JAYA'),
-      align: LineText.ALIGN_LEFT,
-      weight: 2,
-      linefeed: 1,
-    ));
-
-    list.add(LineText(
-      type: LineText.TYPE_TEXT,
-      content: centerText('Jl.Menganti 108'),
-      align: LineText.ALIGN_LEFT,
-      linefeed: 1,
-    ));
-
-    list.add(LineText(
-      type: LineText.TYPE_TEXT,
-      content: centerText('08217888171'),
-      align: LineText.ALIGN_LEFT,
-      linefeed: 1,
-    ));
-
-    // Garis pemisah
-    list.add(LineText(
-      type: LineText.TYPE_TEXT,
-      content: '--------------------------------',
-      align: LineText.ALIGN_LEFT,
-      linefeed: 1,
-    ));
-
-    // Info transaksi dengan justify
-    String currentDate = DateFormat('dd/MM/yy HH:mm').format(DateTime.now());
-    list.add(LineText(
-      type: LineText.TYPE_TEXT,
-      content: justifyText('Tanggal', currentDate),
-      align: LineText.ALIGN_LEFT,
-      linefeed: 1,
-    ));
-
-    list.add(LineText(
-      type: LineText.TYPE_TEXT,
-      content: justifyText('Pelanggan', invoice.customerName),
-      align: LineText.ALIGN_LEFT,
-      linefeed: 1,
-    ));
-
-    list.add(LineText(
-      type: LineText.TYPE_TEXT,
-      content: '--------------------------------',
-      align: LineText.ALIGN_LEFT,
-      linefeed: 1,
-    ));
-
-    // Detail items dengan format yang lebih baik
-    for (var item in invoice.detail) {
-      // Nama item di baris pertama
-      String itemName = item.itemsName;
-      if (itemName.length > 32) {
-        itemName = '${itemName.substring(0, 29)}...';
+      // Header dengan data user
+      if (userData != null) {
+        bytes += generator.text(
+          userData!['company_name'] ?? 'Karbo Tech',
+          styles: PosStyles(
+            align: PosAlign.center,
+            width: PosTextSize.size1,
+            height: PosTextSize.size1,
+            bold: true,
+          ),
+        );
+        bytes += generator.text(
+          userData!['address'] ?? 'Tangerang',
+          styles: PosStyles(align: PosAlign.center),
+        );
+        bytes += generator.text(
+          userData!['npwp'] ?? '125.120.155523.141',
+          styles: PosStyles(align: PosAlign.center),
+        );
+      } else {
+        bytes += generator.text(
+          'Karbo Tech',
+          styles: PosStyles(
+            align: PosAlign.center,
+            width: PosTextSize.size1,
+            height: PosTextSize.size1,
+            bold: true,
+          ),
+        );
+        bytes += generator.text(
+          'Tangerang',
+          styles: PosStyles(align: PosAlign.center),
+        );
+        bytes += generator.text(
+          '125.120.123.141',
+          styles: PosStyles(align: PosAlign.center),
+        );
       }
-      list.add(LineText(
-        type: LineText.TYPE_TEXT,
-        content: itemName,
-        align: LineText.ALIGN_LEFT,
-        linefeed: 1,
-      ));
 
-      // Qty dan harga di baris kedua dengan justify
-      String qtyPrice = justifyText(
-        '${item.qty} x ${MKIVariabels.formatter.format(item.price).replaceAll('Rp ', '').replaceAll('.000', '')}',
-        MKIVariabels.formatter
-            .format(item.subtotal)
-            .replaceAll('Rp ', '')
-            .replaceAll('.000', ''),
+      bytes += generator.hr(); // Garis pemisah
+
+      // Info Transaksi
+      String currentDate = DateFormat('dd/MM/yy HH:mm').format(DateTime.now());
+      bytes += generator.text(
+        'No      : INV${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}',
+        styles: PosStyles(align: PosAlign.left),
       );
-      list.add(LineText(
-        type: LineText.TYPE_TEXT,
-        content: qtyPrice,
-        align: LineText.ALIGN_LEFT,
-        linefeed: 1,
-      ));
+      bytes += generator.text(
+        'Tanggal : $currentDate',
+        styles: PosStyles(align: PosAlign.left),
+      );
+      bytes += generator.text(
+        'Customer: ${invoice.customerName}',
+        styles: PosStyles(align: PosAlign.left),
+      );
+
+      bytes += generator.hr(); // Garis pemisah
+
+      // Detail Items
+      for (var item in invoice.detail) {
+        bytes += generator.text(
+          item.itemsName,
+          styles: PosStyles(align: PosAlign.left),
+        );
+
+        // Format: Qty x Harga = Subtotal
+        bytes += generator.row([
+          PosColumn(
+            text:
+                '${item.qty}x${MKIVariabels.formatter.format(item.price).replaceAll('Rp ', '')}',
+            width: 6,
+            styles: PosStyles(align: PosAlign.left),
+          ),
+          PosColumn(
+            text: MKIVariabels.formatter
+                .format(item.subtotal)
+                .replaceAll('Rp ', ''),
+            width: 6,
+            styles: PosStyles(align: PosAlign.right),
+          ),
+        ]);
+      }
+
+      bytes += generator.hr(); // Garis pemisah
+
+      // Total
+      bytes += generator.row([
+        PosColumn(
+          text: 'TOTAL',
+          width: 6,
+          styles: PosStyles(
+            align: PosAlign.left,
+            bold: true,
+          ),
+        ),
+        PosColumn(
+          text: MKIVariabels.formatter
+              .format(invoice.total)
+              .replaceAll('Rp ', ''),
+          width: 6,
+          styles: PosStyles(
+            align: PosAlign.right,
+            bold: true,
+          ),
+        ),
+      ]);
+
+      bytes += generator.hr(); // Garis pemisah
+
+      // Footer
+      bytes += generator.text(
+        'Terima Kasih!',
+        styles: PosStyles(align: PosAlign.center, bold: true),
+      );
+      bytes += generator.text(
+        'KarposKu',
+        styles: PosStyles(align: PosAlign.center),
+      );
+      bytes += generator.text(
+        '0821 7888 1717',
+        styles: PosStyles(align: PosAlign.center),
+      );
+      bytes += generator.text(
+        'Info : https://karbo.tech/',
+        styles: PosStyles(align: PosAlign.center),
+      );
+
+      // Feed paper and cut
+      bytes += generator.feed(2);
+      bytes += generator.cut();
+
+      await PrintBluetoothThermal.writeBytes(bytes);
     }
-
-    list.add(LineText(
-      type: LineText.TYPE_TEXT,
-      content: '--------------------------------',
-      align: LineText.ALIGN_LEFT,
-      linefeed: 1,
-    ));
-
-    // Total dengan justify
-    String totalAmount = MKIVariabels.formatter
-        .format(invoice.total)
-        .replaceAll('Rp ', '')
-        .replaceAll('.000', '');
-    list.add(LineText(
-      type: LineText.TYPE_TEXT,
-      content: justifyText('TOTAL', totalAmount),
-      align: LineText.ALIGN_LEFT,
-      weight: 1,
-      linefeed: 1,
-    ));
-
-    // Info pembayaran
-    list.add(LineText(
-      type: LineText.TYPE_TEXT,
-      content: centerText('BCA:86500-28288'),
-      align: LineText.ALIGN_LEFT,
-      linefeed: 1,
-    ));
-
-    list.add(LineText(
-      type: LineText.TYPE_TEXT,
-      content: centerText('A/N KARBOTECH'),
-      align: LineText.ALIGN_LEFT,
-      linefeed: 2,
-    ));
-
-    // Footer
-    list.add(LineText(
-      type: LineText.TYPE_TEXT,
-      content: centerText('--Terima Kasih--'),
-      align: LineText.ALIGN_LEFT,
-      linefeed: 1,
-    ));
-
-    // Tambahkan beberapa baris kosong di akhir agar tidak terpotong
-    list.add(LineText(
-      type: LineText.TYPE_TEXT,
-      content: '',
-      align: LineText.ALIGN_LEFT,
-      linefeed: 4,
-    ));
-
-    await bluetoothPrint?.printReceipt(config, list);
   }
 
   void _showPaymentDialog(InvoicePackingData invoice) {
@@ -744,231 +795,202 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Container(
-                width: MediaQuery.of(context).size.width * 0.9,
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Proses Pembayaran',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              invoice.customerName,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: MKIColorConstv2.neutral600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: Icon(
-                            Icons.close,
-                            color: MKIColorConstv2.neutral500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Total Pembayaran Card
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: MKIColorConstv2.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+              child: SingleChildScrollView(
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Total Pembayaran',
+                          const Text(
+                            'Proses Pembayaran',
                             style: TextStyle(
-                              fontSize: 14,
-                              color: MKIColorConstv2.neutral600,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            MKIVariabels.formatter.format(totalPayment),
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: MKIColorConstv2.primary,
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: Icon(
+                              Icons.close,
+                              color: MKIColorConstv2.neutral500,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 16),
 
-                    // Input Pembayaran
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Jumlah Pembayaran',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: MKIColorConstv2.neutral700,
-                          ),
+                      // Total Pembayaran
+                      Text(
+                        'Total Pembayaran',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: MKIColorConstv2.neutral600,
                         ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _paymentController,
-                          keyboardType: TextInputType.number,
-                          style: const TextStyle(
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        MKIVariabels.formatter.format(totalPayment),
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: MKIColorConstv2.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Input Pembayaran
+                      Text(
+                        'Jumlah Pembayaran',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: MKIColorConstv2.neutral700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _paymentController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        decoration: InputDecoration(
+                          prefixText: 'Rp ',
+                          prefixStyle: TextStyle(
+                            color: MKIColorConstv2.neutral700,
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
-                          decoration: InputDecoration(
-                            prefixText: 'Rp ',
-                            prefixStyle: TextStyle(
-                              color: MKIColorConstv2.neutral700,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            filled: true,
-                            fillColor: MKIColorConstv2.neutral100,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: MKIColorConstv2.neutral200,
-                                width: 1,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: MKIColorConstv2.primary,
-                                width: 1.5,
-                              ),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 16,
+                          filled: true,
+                          fillColor: MKIColorConstv2.neutral100,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: MKIColorConstv2.neutral200,
+                              width: 1,
                             ),
                           ),
-                          onChanged: (value) {
-                            setState(() {});
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Kembalian Card
-                    if (_paymentController.text.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: change >= 0
-                              ? MKIColorConstv2.secondarySoft.withOpacity(0.3)
-                              : Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Kembalian',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: change >= 0
-                                    ? MKIColorConstv2.secondary
-                                    : Colors.red,
-                                fontWeight: FontWeight.w600,
-                              ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: MKIColorConstv2.primary,
+                              width: 1.5,
                             ),
-                            Text(
-                              MKIVariabels.formatter.format(change),
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: change >= 0
-                                    ? MKIColorConstv2.secondary
-                                    : Colors.red,
-                              ),
-                            ),
-                          ],
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
                         ),
+                        onChanged: (value) {
+                          setState(() {});
+                        },
                       ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 16),
 
-                    // Tombol Aksi
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: MKIColorConstv2.neutral200,
-                              foregroundColor: MKIColorConstv2.neutral700,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                      // Kembalian (hanya muncul jika pembayaran cukup atau lebih)
+                      if (_paymentController.text.isNotEmpty &&
+                          payment >= totalPayment)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color:
+                                MKIColorConstv2.secondarySoft.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Kembalian',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: MKIColorConstv2.secondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                            child: const Text(
-                              'Batal',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                              Text(
+                                MKIVariabels.formatter.format(change),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: MKIColorConstv2.secondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 24),
+
+                      // Tombol Aksi
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                side: BorderSide(
+                                  color: MKIColorConstv2.neutral300,
+                                ),
+                              ),
+                              child: Text(
+                                'Batal',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: MKIColorConstv2.neutral700,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: payment >= totalPayment
-                                ? () =>
-                                    _processPayment(invoice, payment, change)
-                                : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: MKIColorConstv2.primary,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: payment >= totalPayment
+                                  ? () =>
+                                      _processPayment(invoice, payment, change)
+                                  : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: MKIColorConstv2.primary,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                disabledBackgroundColor:
+                                    MKIColorConstv2.neutral300,
                               ),
-                              disabledBackgroundColor:
-                                  MKIColorConstv2.neutral300,
-                            ),
-                            child: const Text(
-                              'Proses',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                              child: const Text(
+                                'Proses',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -981,10 +1003,31 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
   Future<void> _processPayment(
       InvoicePackingData invoice, double payment, double change) async {
     try {
-      // Menyiapkan data untuk API
+      // print('Processing payment for invoice ID: ${invoice.id}');
+
+      // Validasi ID invoice
+      if (invoice.id.isEmpty) {
+        throw Exception('ID Invoice tidak ditemukan');
+      }
+
+      // print('Payment amount: $payment');
+      // print('Change amount: $change');
+
+      // 1. Update status invoice temporary menjadi done
+      // print('Step 1: Updating invoice temporary status to done');
+      final updateResult = await MKIUrls.updateInvoiceTempStatus(invoice.id);
+      // print('Update result: $updateResult');
+
+      if (updateResult['status'] != 'success') {
+        throw Exception(
+            updateResult['message'] ?? 'Gagal mengupdate status invoice');
+      }
+
+      // 2. Menyiapkan data untuk API invoice tetap
+      // print('Step 2: Preparing data for permanent invoice');
       Map<String, dynamic> requestBody = {
         'total': invoice.total,
-        'total_discount': 0, // Sesuaikan jika ada diskon
+        'total_discount': 0,
         'total_payment': payment,
         'list_product': invoice.detail
             .map((item) => {
@@ -992,26 +1035,32 @@ class _InvoicePackingScreenState extends State<InvoicePackingScreen> {
                   'items_name': item.itemsName,
                   'qty': item.qty,
                   'price_sell': item.price,
-                  'promo_value': 0, // Sesuaikan jika ada promo
+                  'promo_value': 0,
                 })
             .toList(),
       };
+      // print('Request body: $requestBody');
 
+      // 3. Proses ke invoice tetap
+      // print('Step 3: Processing permanent invoice');
       final result = await MKIUrls.processInvoicePayment(requestBody);
+      // print('Process result: $result');
 
       if (result['status'] == 'success') {
-        Navigator.pop(context); // Tutup dialog
+        // print('Payment process completed successfully');
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Pembayaran berhasil diproses'),
             backgroundColor: Colors.green,
           ),
         );
-        _fetchAllData(); // Refresh data
+        _fetchAllData();
       } else {
-        throw Exception(result['message']);
+        throw Exception(result['message'] ?? 'Gagal memproses pembayaran');
       }
     } catch (e) {
+      // print('Error in _processPayment: $e');
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

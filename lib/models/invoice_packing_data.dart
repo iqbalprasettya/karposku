@@ -17,7 +17,7 @@ class InvoicePackingData {
 
   factory InvoicePackingData.fromJson(Map<String, dynamic> json) {
     return InvoicePackingData(
-      id: json['id'] ?? '',
+      id: json['_id'] ?? '',
       customerName: json['customer_name'] ?? '',
       total: double.parse(json['total'].toString()),
       docStatus: json['doc_status'] ?? '',
